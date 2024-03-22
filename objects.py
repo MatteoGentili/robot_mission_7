@@ -3,6 +3,10 @@ from mesa.agent import Agent
 import matplotlib.pyplot as plt
 import numpy as np
 
+##################
+###### Grid ######
+##################
+
 class HazardGrid(MultiGrid):
     def __init__(self, width, height, n_zones=3):
         super().__init__(width+1, height, False)
@@ -34,3 +38,28 @@ class HazardGrid(MultiGrid):
 if __name__=="__main__":
     grid = HazardGrid(15, 5, 1)
     grid.print([(1, 1), (2, 2)], [(3, 3), (4, 4)])
+
+
+##########################
+###### Waste Agents ######
+##########################
+
+class WasteAgent(Agent):
+    def __init__(self, unique_id, model, pos):
+        super().__init__(unique_id, model)
+        self.pos = pos
+
+class GreenWasteAgent(WasteAgent):
+    def __init__(self, unique_id, model, pos):
+        super().__init__(unique_id, model, pos)
+        self.type = "Green"
+
+class YellowWasteAgent(WasteAgent):
+    def __init__(self, unique_id, model, pos):
+        super().__init__(unique_id, model, pos)
+        self.type = "Yellow"
+
+class RedWasteAgent(WasteAgent):
+    def __init__(self, unique_id, model, pos):
+        super().__init__(unique_id, model, pos)
+        self.type = "Red"
