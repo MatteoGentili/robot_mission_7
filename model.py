@@ -3,6 +3,8 @@ from mesa.time import RandomActivation
 import random
 
 from agents import GreenRobot
+from objects import GreenWasteAgent, HazardGrid
+
 
 class Environnement(Model):
     def __init__(self, Nr, Nw, L):
@@ -15,13 +17,13 @@ class Environnement(Model):
         self.scheduler = RandomActivation(self)  
         
         # Grid
-        self.grid = Grid (L)
+        self.grid = HazardGrid (L, 0, 1)
 
         # Agents Waste
         self.W = dict()
         for i in range (Nw):
             pos = random.randint(0, L)
-            w = waste(pos, self)
+            w = GreenWasteAgent(i, self, pos)
             self.W.append(w)
             #self.scheduler.add(w) # gerer par les données de radio-activité
 
@@ -46,4 +48,3 @@ class Environnement(Model):
     def run_n_steps(self,n):
         for i in range(n):
             self.one_step()
-        return [i.wealth for i in self.scheduler.agents]
