@@ -1,6 +1,10 @@
+from abc import ABC, abstractmethod
 from mesa import Agent, Model
 from mesa.time import RandomActivation
 from mesa.space import MultiGrid
+import random
+
+from objects import HazardGrid, WasteAgent, GreenWasteAgent, YellowWasteAgent, RedWasteAgent
 
 ##########################
 ###### Robot Agents ######
@@ -13,57 +17,70 @@ class Robot(Agent):
     Made_action is a boolean that indicates if the robot has already made an action in the current step
     """
 
-    def __init__(self, unique_id, model):
+    def __init__(self, unique_id, model, pos):
         super().__init__(unique_id, model)
         self.carry = 0
         self.go_east = False
-        self.made_action = False
+        self.action = ""
+        self.pos = pos
+        self.border = None
 
-    def move(self):
+    def get_new_pos(self):
         if self.go_east:
-            self.model.grid.move_agent(self, (self.pos[0] + 1, self.pos[1]))
-            self.made_action = True
+            return self.pos[0] + 1, self.pos[1]
         else:
-            self.model.grid.move_agent(self, "position_donnée_par_environnement") # TO COMPLETE
-            self.made_action = True
+            possible_steps = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
+            possible_steps = [pos for pos in possible_steps if pos[0] < self.border] # Cannot go further east
+            return random.choice(possible_steps)
 
 class GreenRobot(Robot):
     """
     Green Robot:
         ○ walk to pick up 2 initial wastes (i.e. green),
         ○ if possession of 2 green wastes transport them further east,
-        ○ if possession of 2 green wastes and at the border of green zone, unload them,
+        ○ if possession of 2 green wastes and at the border of green zone, unload a yellow waste,
         ○ green robot cannot exceed zone z1.
     """
 
-    def __init__(self, unique_id, model):
-        super().__init__(unique_id, model)
+    def __init__(self, unique_id, model, pos):
+        super().__init__(unique_id, model, pos)
         self.border = self.model.width//3 - 1 # frontière de la zone verte
 
 
-    def carry_waste(self):
+    def pick_up_waste(self):
         if self.carry < 2:
             if "is_green_waste" :  # TO COMPLETE
+                self.action = "pick_ip"
                 self.carry += 1
-                self.made_action = True
+                g = GreenWasteAgent("new_id", self.model, self.pos) # TO COMPLETE (ex : self.model.generate_new_id)
+                return g
         
         if self.carry == 2:
             self.go_east = True
 
-    def unload_waste(self):
-        self.carry = 0
-        self.go_east = False
-        self.model.make_agent("YellowWasteAgent", self.pos) # TO COMPLETE
-        self.made_action = True
+    def drop_waste(self):
+        if self.pos[0] == self.border and self.carry == 2:
+            self.carry = 0
+            self.go_east = False
+            self.action = "drop"
+            y = YellowWasteAgent("new_id", self.model, self.pos) # TO COMPLETE (ex : self.model.generate_new_id)
+            return j
 
     def step(self):
-        self.carry_waste()
-        if not self.made_action:
-            if self.pos[0] == self.border and self.carry == 2:
-                self.unload_waste()
-        if not self.made_action:
-            self.move()
-        self.made_action = False
+
+        new_pos = self.get_new_pos()
+
+        if self.action == "" :
+            waste = self.pick_up_waste()
+
+        if self.action == "" :
+            waste = self.drop_waste()
+
+        else :
+            self.action = "move"
+
+        self.model.do(self, self.action, pos = new_pos, waste = waste)
+        self.action = ""
 
 class YellowRobot(Robot):
     """
