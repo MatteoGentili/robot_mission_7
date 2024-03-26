@@ -64,7 +64,7 @@ class GreenRobot(Robot):
             self.go_east = False
             self.action = "drop"
             y = YellowWasteAgent("new_id", self.model, self.pos) # TO COMPLETE (ex : self.model.generate_new_id)
-            return j
+            return y
 
     def step(self):
 
