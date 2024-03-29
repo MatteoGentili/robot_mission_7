@@ -1,6 +1,6 @@
 from mesa import Agent
 import random
-
+import numpy as np
 
 ##########################
 ###### Robot Agents ######
@@ -33,6 +33,14 @@ class Robot(Agent):
             possible_steps = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
             possible_steps = [pos for pos in possible_steps if pos[0] < self.border] # Cannot go further east
             return random.choice(possible_steps)
+    
+    def deliberate(self, knowledge=None):
+        raise NotImplementedError
+    
+    def step(self):
+        self.update_knowledge()
+        decision = self.deliberate(self.knowledge)
+        self.percepts = self.model.do(self, **decision)
 
 class GreenRobot(Robot):
     """
@@ -45,7 +53,7 @@ class GreenRobot(Robot):
 
     def __init__(self, unique_id, model, pos):
         super().__init__(unique_id, model, pos)
-        self.border = self.model.grid_len//self.model.grid.n_zones # frontière de la zone verte
+        self.border = self.model.grid_len//self.model.grid.n_zones -1# frontière de la zone verte
         self.type = "green"
 
         self.knowledge = {
@@ -88,10 +96,6 @@ class GreenRobot(Robot):
                 action = "drop"
                 return {"action": action}
 
-    def step(self):
-        self.update_knowledge()
-        decision = self.deliberate(self.knowledge)
-        self.percepts = self.model.do(self, **decision)
 
 class YellowRobot(Robot):
     """
@@ -102,22 +106,49 @@ class YellowRobot(Robot):
         ○ yellow robot can move in zones z1 and z2.
     """
 
-    def carry_waste(self):
-        if "iswates" == True :
-            self.carry += 1
-    def fusion_waste(self):
-        pass
+    def __init__(self, unique_id, model, pos):
+        super().__init__(unique_id, model, pos)
+        self.border = self.model.grid_len//self.model.grid.n_zones*2 -1 # frontière de la zone jaune
+        self.type = "yellow"
 
-    def move_to_red_robot(self):
-        pass
+        self.knowledge = {
+            "wastes": self.model.grid.get_wastes(),
+            "robots": self.model.grid.get_robots(),
+            "inventory": [],
+            "pos": self.pos,
+            "color": self.type,
+            "border": self.border
+        }
+        self.percepts = self.knowledge
 
-    def step(self):
-        self.move()
-        if self.carry < 2:
-            self.carry_waste()
-        elif self.carry == 2: 
-            self.fusion_waste()
-            self.move_to_red_robot()
+    def deliberate(self, knowledge=None):
+        if knowledge is None:
+            knowledge = self.knowledge
+        # if not carrying 2 wastes, move towards (1 cell at a time) the closest waste of its color if not already on it
+        if len(self.inventory) < 2:
+            self.action = "move"
+            wastes = knowledge["wastes"][knowledge["color"]]
+            if len(wastes) == 0:
+                return {"action": "move", "pos": self.get_new_pos()}
+            closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
+            if closest_waste.pos != knowledge["pos"]:
+                action = "move"
+                # move one cell towards the closest waste
+                pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
+                pos = min(pos, key=lambda p: self.model.grid.get_distance(p, closest_waste.pos))
+                return {"action": action, "pos": pos}
+            else:
+                action = "pick_up"
+                return {"action": action, "waste": closest_waste}
+        # if carrying 2 wastes, if not at the border of the zone, move east, else drop a yellow waste
+        else:
+            if knowledge["pos"][0] < knowledge["border"]:
+                action = "move"
+                pos = (knowledge["pos"][0] + 1, knowledge["pos"][1])
+                return {"action": action, "pos": pos}
+            else:
+                action = "drop"
+                return {"action": action}
 
 class RedRobot(Robot):
     """
@@ -127,8 +158,46 @@ class RedRobot(Robot):
         disposal zone”, the waste is then “put away”,
         ○ red robot can move in zones z1, z2 andz3.    
     """
+    def __init__(self, unique_id, model, pos):
+        super().__init__(unique_id, model, pos)
+        # disposal_zone is where the grid's radioactivity is the highest
+        self.disposal_zone = np.argmax(self.model.grid.radioactivity_map[:,-1]), self.model.grid_len - 1
+        self.type = "red"
 
+        self.knowledge = {
+            "wastes": self.model.grid.get_wastes(),
+            "robots": self.model.grid.get_robots(),
+            "inventory": [],
+            "pos": self.pos,
+            "color": self.type,
+            "disposal_zone": self.disposal_zone
+        }
+        self.percepts = self.knowledge
 
-    pass
-        
+    def deliberate(self, knowledge=None):
+        if knowledge is None:
+            knowledge = self.knowledge
+        # red robots pick up red wastes and goest to put them in disposal zone
+        if len(self.inventory) < 1:
+            self.action = "move"
+            wastes = knowledge["wastes"][knowledge["color"]]
+            if len(wastes) == 0:
+                return {"action": "move", "pos": self.get_new_pos()}
+            closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
+            if closest_waste.pos != knowledge["pos"]:
+                action = "move"
+                # move one cell towards the closest waste
+                pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
+                pos = min(pos, key=lambda p: self.model.grid.get_distance(p, closest_waste.pos))
+                return {"action": action, "pos": pos}
+            else:
+                action = "pick_up"
+                return {"action": action, "waste": closest_waste}
+        else:
+            if knowledge["pos"] != knowledge["disposal_zone"]:
+                action = "move"
+                return {"action": action, "pos": knowledge["disposal_zone"]}
+            else:
+                action = "drop"
+                return {"action": action, "waste": self.inventory[0]}
 
