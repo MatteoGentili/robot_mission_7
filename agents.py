@@ -41,8 +41,8 @@ class Robot(Agent):
         if len(self.inventory) < 2:
             self.action = "move"
             wastes = knowledge["wastes"][knowledge["color"]]
-            if len(wastes) == 0:
-                return {"action": "move", "pos": knowledge["pos"]}
+            if len(wastes) == 0: # No waste of its color, then idle
+                return {"action": "move", "pos": knowledge["pos"], "objective": "idle"}
             closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
             if closest_waste.pos != knowledge["pos"]:
                 action = "move"
@@ -52,7 +52,7 @@ class Robot(Agent):
                 pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
                 pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
                 pos = min(pos, key=lambda p: self.model.grid.get_distance(p, closest_waste.pos)) if len(pos) > 0 else knowledge["pos"]
-                return {"action": action, "pos": pos}
+                return {"action": action, "pos": pos, "objective": f"pick up the closest waste which is in {closest_waste.pos}"}
             else:
                 action = "pick_up"
                 return {"action": action, "waste": closest_waste}
@@ -61,7 +61,7 @@ class Robot(Agent):
             if knowledge["pos"][0] < knowledge["border"]:
                 action = "move"
                 pos = (knowledge["pos"][0] + 1, knowledge["pos"][1])
-                return {"action": action, "pos": pos}
+                return {"action": action, "pos": pos, "objective": "go to the border of the zone"}
             else:
                 action = "drop"
                 return {"action": action}
@@ -132,7 +132,7 @@ class RedRobot(Robot):
     def __init__(self, unique_id, model, pos):
         super().__init__(unique_id, model, pos)
         # disposal_zone is where the grid's radioactivity is the highest
-        self.disposal_zone = np.argmax(self.model.grid.radioactivity_map[:,-1]), self.model.grid_len - 1
+        self.disposal_zone = self.model.grid_len - 1, np.argmax(self.model.grid.radioactivity_map[:,-1])
         self.type = "red"
         self.border = self.model.grid_len - 1 # frontière de la zone rouge
 
@@ -154,7 +154,7 @@ class RedRobot(Robot):
             self.action = "move"
             wastes = knowledge["wastes"][knowledge["color"]]
             if len(wastes) == 0:
-                return {"action": "move", "pos": knowledge["pos"]}
+                return {"action": "move", "pos": knowledge["pos"], "objective": "idle"}
             closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
             if closest_waste.pos != knowledge["pos"]:
                 action = "move"
@@ -164,7 +164,7 @@ class RedRobot(Robot):
                 pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
                 pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
                 pos = min(pos, key=lambda p: self.model.grid.get_distance(p, closest_waste.pos)) if len(pos) > 0 else knowledge["pos"]
-                return {"action": action, "pos": pos}
+                return {"action": action, "pos": pos, "objective": "pick up the closest waste"}
             else:
                 action = "pick_up"
                 return {"action": action, "waste": closest_waste}
@@ -176,8 +176,8 @@ class RedRobot(Robot):
                 pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["green"]]]
                 pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
                 pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
-                pos = min(pos, key=lambda p: self.model.grid.get_distance(p, knowledge["disposal_zone"]))
-                return {"action": action, "pos": pos}
+                pos = min(pos, key=lambda p: self.model.grid.get_distance(p, knowledge["disposal_zone"])) if len(pos) > 0 else knowledge["pos"]
+                return {"action": action, "pos": pos, "objective": "go to the disposal zone"}
             else:
                 action = "drop"
                 return {"action": action, "waste": self.inventory[0]}

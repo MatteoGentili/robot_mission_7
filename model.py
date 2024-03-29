@@ -50,12 +50,12 @@ class Environnement(Model):
                 a = classe(self.next_id(), self, pos)
                 self.grid.place_agent(a, pos)
                 self.schedule.add(a)
-                print(a.border, a.type)
+                # print(a.border, a.type)
 
     def do(self, agent, action, **kwargs):
         if action == "move":
             if self.debug:
-                print(agent.type, "Agent", agent.unique_id, "in pos", agent.pos, "moving to", kwargs["pos"], "in zone", self.grid.get_zone(kwargs["pos"]))
+                print(agent.type, "Agent", agent.unique_id, "in pos", agent.pos, "moving to", kwargs["pos"], "in zone", self.grid.get_zone(kwargs["pos"]), "to", kwargs["objective"])
             self.grid.move_agent(agent, kwargs["pos"])
         elif action == "pick_up":
             if self.debug:
@@ -74,9 +74,9 @@ class Environnement(Model):
             elif isinstance(agent, YellowRobot):
                 waste = RedWasteAgent(self.next_id(), self, agent.pos)
             else:
-                waste = kwargs["waste"]
+                waste = None
             agent.inventory = []
-            self.grid.place_agent(waste, agent.pos)
+            self.grid.place_agent(waste, agent.pos) if waste is not None else None
         else:
             print("Unknown action: ", action)
         percepts = {"pos": agent.pos, "inventory": agent.inventory, "wastes": self.grid.get_wastes(), "robots": self.grid.get_robots()}

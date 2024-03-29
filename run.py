@@ -3,7 +3,9 @@ import seaborn as sns
 
 def main(nsteps=1):
     robots_numbers = [3, 3, 3]
-    environnement = Environnement(robots_numbers, 5, 15, 3, True)
+    environnement = Environnement(robots_numbers, 10, 15, 3, True)
+    print(environnement.grid.radioactivity_map.shape)
+    print(len(environnement.grid._grid), len(environnement.grid._grid[0]))
     environnement.run_n_steps(nsteps)
     # environnement.grid.print()
     environnement.grid.draw()
@@ -17,7 +19,7 @@ def main(nsteps=1):
         ylabel="Number of robots",
         title="Number of waste carried by each robot"
     )
-
+    g.figure.savefig("output.png")
 
 if __name__ == "__main__":
-    main(500)
+    main(100)
