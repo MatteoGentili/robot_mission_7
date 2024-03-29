@@ -2,9 +2,9 @@ from model import Environnement
 import seaborn as sns
 
 def main(nsteps=1):
-    environnement = Environnement(2, 5, 15, 3, True)
+    environnement = Environnement(2, 5, 10, 3, True)
     environnement.run_n_steps(nsteps)
-    environnement.grid.draw()
+    environnement.grid.print()
     environnement.master.mainloop()
     agent_inventory = environnement.datacollector.get_agent_vars_dataframe()
     last_step = agent_inventory.index.get_level_values('Step').max()

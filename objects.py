@@ -145,23 +145,27 @@ class HazardGrid(MultiGrid):
         """
         Plot the grid with wastes and robots
         """
-        wastes_pos = []
-        robots_pos = []
+        wastes_pos = {}
+        robots_pos = {}
         for agent in self.get_all_agents():
             if isinstance(agent, WasteAgent):
                 if agent.pos is None:
                     continue
-                wastes_pos.append(agent.pos)
+                wastes_pos[agent] = agent.pos
             elif isinstance(agent, Robot):
-                robots_pos.append(agent.pos)
+                robots_pos[agent] = agent.pos
         fig, ax = plt.subplots()
         ax.imshow(self.radioactivity_map, cmap='afmhot', interpolation='nearest')
         for waste in wastes_pos:
             # adds a "W" to the waste position
-            ax.text(waste[0], waste[1], "W", color='green', fontsize=12)
+            pos = wastes_pos[waste]
+            color = 'green' if waste.type == "Green" else 'yellow' if waste.type == "Yellow" else 'red'
+            ax.text(pos[0], pos[1], "W", color=color, fontsize=12)
         for robot in robots_pos:
             # adds a "R" to the robot position
-            ax.text(robot[0], robot[1], "R", color='red', fontsize=12)
+            pos = robots_pos[robot]
+            color = 'green' if robot.type == "green" else 'yellow' if robot.type == "yellow" else 'red'
+            ax.text(pos[0], pos[1], "R", color=color, fontsize=12)
         plt.show()
 
     def get_color(self, radioactivity):
