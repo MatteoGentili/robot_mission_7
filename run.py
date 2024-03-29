@@ -3,9 +3,10 @@ import seaborn as sns
 
 def main(nsteps=1):
     robots_numbers = [3, 3, 3]
-    environnement = Environnement(robots_numbers, 5, 10, 3, True)
+    environnement = Environnement(robots_numbers, 5, 15, 3, True)
     environnement.run_n_steps(nsteps)
-    environnement.grid.print()
+    # environnement.grid.print()
+    environnement.grid.draw()
     environnement.master.mainloop()
     agent_inventory = environnement.datacollector.get_agent_vars_dataframe()
     last_step = agent_inventory.index.get_level_values('Step').max()

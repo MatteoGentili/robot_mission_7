@@ -34,35 +34,39 @@ class Environnement(Model):
         # Agents Waste
         # self.W = dict()
         for i in range (Nw):
-            pos = (random.randint(0, L-1), random.randint(0, H-1))
+            # put green wastes in the first zone
+            pos = (random.randint(0, L//3-1), random.randint(0, H-1))
             w = GreenWasteAgent(self.next_id(), self, pos)
             self.grid.place_agent(w, pos)
             # self.W.append(w)
             self.schedule.add(w) # gerer par les données de radio-activité
 
         # Agents Robots
-        for i in Nr:
-            for j in range(i):
-                pos = (random.randint(0, L-1), random.randint(0, H-1))
-                a = GreenRobot(self.next_id(), self, pos)
+        robot_classes = [GreenRobot, YellowRobot, RedRobot]
+        for nb, classe, i in zip(Nr, robot_classes, range(len(Nr))):
+            for j in range(nb):
+                # get a random position in the according zone
+                pos = random.randint(i*L//3, (i+1)*L//3-1), random.randint(0, H-1)
+                a = classe(self.next_id(), self, pos)
                 self.grid.place_agent(a, pos)
                 self.schedule.add(a)
+                print(a.border, a.type)
 
     def do(self, agent, action, **kwargs):
         if action == "move":
             if self.debug:
-                print("Agent", agent.unique_id, "moving to", kwargs["pos"])
+                print(agent.type, "Agent", agent.unique_id, "in pos", agent.pos, "moving to", kwargs["pos"], "in zone", self.grid.get_zone(kwargs["pos"]))
             self.grid.move_agent(agent, kwargs["pos"])
         elif action == "pick_up":
             if self.debug:
-                print("Agent", agent.unique_id, "picking up waste", kwargs["waste"].unique_id)
+                print(agent.type, "Agent", agent.unique_id, "picking up waste", kwargs["waste"].unique_id)
             # remove the waste picked up from the grid
             self.grid.remove_agent(kwargs["waste"])
             # add the waste picked up to the agent
             agent.inventory.append(kwargs["waste"])
         elif action == "drop":
             if self.debug:
-                print("Agent", agent.unique_id, "dropping waste")
+                print(agent.type, "Agent", agent.unique_id, "dropping waste")
             # kwargs here is empty
             # add a transformed waste to the grid according to the agent's color
             if isinstance(agent, GreenRobot):

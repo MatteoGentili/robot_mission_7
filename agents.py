@@ -34,8 +34,37 @@ class Robot(Agent):
             possible_steps = [pos for pos in possible_steps if pos[0] < self.border] # Cannot go further east
             return random.choice(possible_steps)
     
-    def deliberate(self, knowledge=None):
-        raise NotImplementedError
+    def deliberate(self, knowledge=None): ### ONLY FOR GREEN AND YELLOW ROBOTS
+        if knowledge is None:
+            knowledge = self.knowledge
+        # if not carrying 2 wastes, move towards (1 cell at a time) the closest waste of its color if not already on it
+        if len(self.inventory) < 2:
+            self.action = "move"
+            wastes = knowledge["wastes"][knowledge["color"]]
+            if len(wastes) == 0:
+                return {"action": "move", "pos": knowledge["pos"]}
+            closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
+            if closest_waste.pos != knowledge["pos"]:
+                action = "move"
+                # move one cell towards the closest waste
+                pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
+                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["green"]]]
+                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
+                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
+                pos = min(pos, key=lambda p: self.model.grid.get_distance(p, closest_waste.pos)) if len(pos) > 0 else knowledge["pos"]
+                return {"action": action, "pos": pos}
+            else:
+                action = "pick_up"
+                return {"action": action, "waste": closest_waste}
+        # if carrying 2 wastes, if not at the border of the zone, move east, else drop a yellow waste
+        else:
+            if knowledge["pos"][0] < knowledge["border"]:
+                action = "move"
+                pos = (knowledge["pos"][0] + 1, knowledge["pos"][1])
+                return {"action": action, "pos": pos}
+            else:
+                action = "drop"
+                return {"action": action}
     
     def step(self):
         self.update_knowledge()
@@ -67,36 +96,6 @@ class GreenRobot(Robot):
         self.percepts = self.knowledge
 
 
-    def deliberate(self, knowledge=None):
-        if knowledge is None:
-            knowledge = self.knowledge
-        # if not carrying 2 wastes, move towards (1 cell at a time) the closest waste of its color if not already on it
-        if len(self.inventory) < 2:
-            self.action = "move"
-            wastes = knowledge["wastes"][knowledge["color"]]
-            if len(wastes) == 0:
-                return {"action": "move", "pos": knowledge["pos"]}
-            closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
-            if closest_waste.pos != knowledge["pos"]:
-                action = "move"
-                # move one cell towards the closest waste
-                pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
-                pos = min(pos, key=lambda p: self.model.grid.get_distance(p, closest_waste.pos))
-                return {"action": action, "pos": pos}
-            else:
-                action = "pick_up"
-                return {"action": action, "waste": closest_waste}
-        # if carrying 2 wastes, if not at the border of the zone, move east, else drop a yellow waste
-        else:
-            if knowledge["pos"][0] < knowledge["border"]:
-                action = "move"
-                pos = (knowledge["pos"][0] + 1, knowledge["pos"][1])
-                return {"action": action, "pos": pos}
-            else:
-                action = "drop"
-                return {"action": action}
-
-
 class YellowRobot(Robot):
     """
     Yellow Robot:
@@ -121,34 +120,6 @@ class YellowRobot(Robot):
         }
         self.percepts = self.knowledge
 
-    def deliberate(self, knowledge=None):
-        if knowledge is None:
-            knowledge = self.knowledge
-        # if not carrying 2 wastes, move towards (1 cell at a time) the closest waste of its color if not already on it
-        if len(self.inventory) < 2:
-            self.action = "move"
-            wastes = knowledge["wastes"][knowledge["color"]]
-            if len(wastes) == 0:
-                return {"action": "move", "pos": self.get_new_pos()}
-            closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
-            if closest_waste.pos != knowledge["pos"]:
-                action = "move"
-                # move one cell towards the closest waste
-                pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
-                pos = min(pos, key=lambda p: self.model.grid.get_distance(p, closest_waste.pos))
-                return {"action": action, "pos": pos}
-            else:
-                action = "pick_up"
-                return {"action": action, "waste": closest_waste}
-        # if carrying 2 wastes, if not at the border of the zone, move east, else drop a yellow waste
-        else:
-            if knowledge["pos"][0] < knowledge["border"]:
-                action = "move"
-                pos = (knowledge["pos"][0] + 1, knowledge["pos"][1])
-                return {"action": action, "pos": pos}
-            else:
-                action = "drop"
-                return {"action": action}
 
 class RedRobot(Robot):
     """
@@ -183,13 +154,16 @@ class RedRobot(Robot):
             self.action = "move"
             wastes = knowledge["wastes"][knowledge["color"]]
             if len(wastes) == 0:
-                return {"action": "move", "pos": self.get_new_pos()}
+                return {"action": "move", "pos": knowledge["pos"]}
             closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
             if closest_waste.pos != knowledge["pos"]:
                 action = "move"
                 # move one cell towards the closest waste
                 pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
-                pos = min(pos, key=lambda p: self.model.grid.get_distance(p, closest_waste.pos))
+                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["green"]]]
+                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
+                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
+                pos = min(pos, key=lambda p: self.model.grid.get_distance(p, closest_waste.pos)) if len(pos) > 0 else knowledge["pos"]
                 return {"action": action, "pos": pos}
             else:
                 action = "pick_up"
@@ -197,7 +171,13 @@ class RedRobot(Robot):
         else:
             if knowledge["pos"] != knowledge["disposal_zone"]:
                 action = "move"
-                return {"action": action, "pos": knowledge["disposal_zone"]}
+                # move one cell towards the disposal zone
+                pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
+                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["green"]]]
+                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
+                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
+                pos = min(pos, key=lambda p: self.model.grid.get_distance(p, knowledge["disposal_zone"]))
+                return {"action": action, "pos": pos}
             else:
                 action = "drop"
                 return {"action": action, "waste": self.inventory[0]}

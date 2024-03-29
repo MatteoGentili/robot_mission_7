@@ -2,6 +2,7 @@ from mesa.space import MultiGrid
 from mesa.agent import Agent
 import matplotlib.pyplot as plt
 import numpy as np
+import random
 import tkinter as tk
 from agents import Robot
 
@@ -50,20 +51,28 @@ class HazardGrid(MultiGrid):
         self.height = height
         self.n_zones = n_zones
         self.zone_width = width // n_zones
+        assert width % n_zones == 0, "Width must be a multiple of the number of zones"
         self.radioactivity_map = np.ones((height, width))
         # last column is the general waste disposal zone
-        print("n_zones = ",n_zones)
+        # print("n_zones = ",n_zones)
         for i in range(n_zones):
             # for each zone, assign a random radioactivity level
             random_values = np.random.uniform(i / n_zones, (i + 1) / n_zones, (self.height, self.zone_width))
             self.radioactivity_map[:, i*self.zone_width:(i+1)*self.zone_width] = random_values
-        # General waste disposal zone
-        self.radioactivity_map[1, 14] = 200
+        # General waste disposal zone : 200 radioactivity at end of red zone, arbitrary y
+        self.radioactivity_map[random.randint(0, self.height-1), -1] = 200
+        # print("radioactivity_map = ",self.radioactivity_map)
         # No waste, just ground
         # for _ in range(0, 30):
         #     i = np.random.randint(0, self.height)
         #     j = np.random.randint(0, self.width+1)
         #     self.radioactivity_map[i][j] = 10
+    
+    def get_zone(self, pos):
+        """
+        Get the zone of a position
+        """
+        return pos[0] // self.zone_width
 
     def get_all_agents(self):
         """
@@ -96,10 +105,14 @@ class HazardGrid(MultiGrid):
         """
         Get the robots positions
         """
-        robots = []
+        robots = {
+            "green": [],
+            "yellow": [],
+            "red": []
+        }
         for agent in self.get_all_agents():
             if isinstance(agent, Robot):
-                robots.append(agent.pos)
+                robots[agent.type.lower()].append(agent)
         return robots
 
     def get_distance(self, pos1, pos2):
@@ -119,15 +132,15 @@ class HazardGrid(MultiGrid):
 
         canvas = tk.Canvas(self.master, width=self.width*cell_width, height=self.height*cell_height)
         canvas.pack()
-        wastes_pos = []
-        robots_pos = []
+        wastes_pos = {}
+        robots_pos = {}
         for agent in self.get_all_agents():
             if isinstance(agent, WasteAgent):
                 if agent.pos is None:
                     continue
-                wastes_pos.append(agent.pos)
+                wastes_pos[agent] = agent.pos
             elif isinstance(agent, Robot):
-                robots_pos.append(agent.pos)
+                robots_pos[agent] = agent.pos
 
         for i in range(self.height):
             for j in range(self.width):
@@ -139,14 +152,25 @@ class HazardGrid(MultiGrid):
                 canvas.create_rectangle(x0, y0, x1, y1, fill=color)
 
         for waste in wastes_pos:
-            x = waste[0] * cell_width + cell_width / 2
-            y = waste[1] * cell_height + cell_height / 2
-            canvas.create_text(x, y, text="W", fill='#245606', anchor='center', font=("Helvetica", 16, "bold"))
+            pos = wastes_pos[waste]
+            x = pos[0] * cell_width + cell_width / 2
+            y = pos[1] * cell_height + cell_height / 2
+            fill = 'green' if waste.type == "Green" else 'yellow' if waste.type == "Yellow" else 'red'
+            # make the letter more visible by adding a black outline
+            text_item = canvas.create_text(x, y, text="W", fill=fill, anchor='center', font=("Helvetica", 16, "bold"))
+            bbox = canvas.bbox(text_item)
+            rect_item = canvas.create_rectangle(bbox, outline="white", fill="black")
+            canvas.tag_raise(text_item,rect_item)
 
         for robot in robots_pos:
-            x = robot[0] * cell_width + cell_width / 2
-            y = robot[1] * cell_height + cell_height / 2
-            canvas.create_text(x, y, text="R", fill='#561A06', anchor='center', font=("Helvetica", 16, "bold"))
+            pos = robots_pos[robot]
+            x = pos[0] * cell_width + cell_width / 2
+            y = pos[1] * cell_height + cell_height / 2
+            fill = 'green' if robot.type == "green" else 'yellow' if robot.type == "yellow" else 'red'
+            text_item = canvas.create_text(x, y, text="R", fill=fill, anchor='center', font=("Helvetica", 16, "bold"))
+            bbox = canvas.bbox(text_item)
+            rect_item = canvas.create_rectangle(bbox, outline="white", fill="black")
+            canvas.tag_raise(text_item,rect_item)
     
     def print(self):
         """
