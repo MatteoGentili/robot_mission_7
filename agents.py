@@ -75,7 +75,7 @@ class GreenRobot(Robot):
             self.action = "move"
             wastes = knowledge["wastes"][knowledge["color"]]
             if len(wastes) == 0:
-                return {"action": "move", "pos": self.get_new_pos()}
+                return {"action": "move", "pos": knowledge["pos"]}
             closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
             if closest_waste.pos != knowledge["pos"]:
                 action = "move"
@@ -163,6 +163,7 @@ class RedRobot(Robot):
         # disposal_zone is where the grid's radioactivity is the highest
         self.disposal_zone = np.argmax(self.model.grid.radioactivity_map[:,-1]), self.model.grid_len - 1
         self.type = "red"
+        self.border = self.model.grid_len - 1 # frontière de la zone rouge
 
         self.knowledge = {
             "wastes": self.model.grid.get_wastes(),

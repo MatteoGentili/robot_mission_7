@@ -28,23 +28,24 @@ class Environnement(Model):
         master = tk.Tk()
         master.geometry("400x300")
         self.master = master
-        self.grid = HazardGrid(master, L, H, 1)
+        self.grid = HazardGrid(master, L, H, 3)
 
         # Agents Waste
         # self.W = dict()
         for i in range (Nw):
             pos = (random.randint(0, L-1), random.randint(0, H-1))
-            w = GreenWasteAgent(i, self, pos)
+            w = GreenWasteAgent(self.next_id(), self, pos)
             self.grid.place_agent(w, pos)
             # self.W.append(w)
             self.schedule.add(w) # gerer par les données de radio-activité
 
         # Agents Robots
-        for i in range(Nr):
-            pos = (random.randint(0, L-1), random.randint(0, H-1))
-            a = GreenRobot(i, self, pos)
-            self.grid.place_agent(a, pos)
-            self.schedule.add(a)
+        for i in Nr:
+            for j in range(i):
+                pos = (random.randint(0, L-1), random.randint(0, H-1))
+                a = GreenRobot(self.next_id(), self, pos)
+                self.grid.place_agent(a, pos)
+                self.schedule.add(a)
 
     def do(self, agent, action, **kwargs):
         if action == "move":

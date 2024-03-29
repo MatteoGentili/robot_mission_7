@@ -2,7 +2,8 @@ from model import Environnement
 import seaborn as sns
 
 def main(nsteps=1):
-    environnement = Environnement(2, 5, 10, 3, True)
+    robots_numbers = [3, 3, 3]
+    environnement = Environnement(robots_numbers, 5, 10, 3, True)
     environnement.run_n_steps(nsteps)
     environnement.grid.print()
     environnement.master.mainloop()
