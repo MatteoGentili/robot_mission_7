@@ -26,8 +26,9 @@ class Environnement(Model):
         
         # Grid
         master = tk.Tk()
-        master.geometry("400x300")
+        master.geometry("600x300")
         self.master = master
+        # Paramètres = (master, width, height, n_zones=3)
         self.grid = HazardGrid(master, L, H, 3)
 
         # Agents Waste

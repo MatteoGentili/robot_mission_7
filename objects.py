@@ -44,19 +44,26 @@ from agents import Robot
 
 class HazardGrid(MultiGrid):
     def __init__(self, master, width, height, n_zones=3):
-        super().__init__(width+1, height, False)
+        super().__init__(width, height, False)
         self.master = master
         self.width = width
         self.height = height
         self.n_zones = n_zones
         self.zone_width = width // n_zones
-        self.radioactivity_map = np.ones((height, width+1))
+        self.radioactivity_map = np.ones((height, width))
         # last column is the general waste disposal zone
-
+        print("n_zones = ",n_zones)
         for i in range(n_zones):
             # for each zone, assign a random radioactivity level
             random_values = np.random.uniform(i / n_zones, (i + 1) / n_zones, (self.height, self.zone_width))
             self.radioactivity_map[:, i*self.zone_width:(i+1)*self.zone_width] = random_values
+        # General waste disposal zone
+        self.radioactivity_map[1, 14] = 200
+        # No waste, just ground
+        # for _ in range(0, 30):
+        #     i = np.random.randint(0, self.height)
+        #     j = np.random.randint(0, self.width+1)
+        #     self.radioactivity_map[i][j] = 10
 
     def get_all_agents(self):
         """
@@ -107,8 +114,8 @@ class HazardGrid(MultiGrid):
         """
         Draw the grid with wastes and robots
         """
-        cell_width = 20
-        cell_height = 20
+        cell_width = 60
+        cell_height = 60
 
         canvas = tk.Canvas(self.master, width=self.width*cell_width, height=self.height*cell_height)
         canvas.pack()
@@ -123,7 +130,7 @@ class HazardGrid(MultiGrid):
                 robots_pos.append(agent.pos)
 
         for i in range(self.height):
-            for j in range(self.width+1):
+            for j in range(self.width):
                 x0 = j * cell_width
                 y0 = i * cell_height
                 x1 = x0 + cell_width
@@ -132,14 +139,14 @@ class HazardGrid(MultiGrid):
                 canvas.create_rectangle(x0, y0, x1, y1, fill=color)
 
         for waste in wastes_pos:
-            x = waste[0] * cell_width
-            y = waste[1] * cell_height
-            canvas.create_text(x, y, text="W", fill='green')
+            x = waste[0] * cell_width + cell_width / 2
+            y = waste[1] * cell_height + cell_height / 2
+            canvas.create_text(x, y, text="W", fill='#245606', anchor='center', font=("Helvetica", 16, "bold"))
 
         for robot in robots_pos:
-            x = robot[0] * cell_width
-            y = robot[1] * cell_height
-            canvas.create_text(x, y, text="R", fill='red')
+            x = robot[0] * cell_width + cell_width / 2
+            y = robot[1] * cell_height + cell_height / 2
+            canvas.create_text(x, y, text="R", fill='#561A06', anchor='center', font=("Helvetica", 16, "bold"))
     
     def print(self):
         """
@@ -171,27 +178,41 @@ class HazardGrid(MultiGrid):
     def get_color(self, radioactivity):
         # Map radioactivity to shades of yellow, orange, and red
         if radioactivity < 0.33:
-            # Yellow to orange
+            # Green to dark green
             red = 0
             green = int(255 * (radioactivity / 0.33))
             blue = 0
         elif radioactivity < 0.66:
-            # Orange to red
-            red = 255
+            # Yellow to orange
+            red = 230
             green = int(255 * ((0.66 - radioactivity) / 0.33))
             blue = 0
-        else:
+        elif radioactivity > 0.66 and radioactivity < 1:
             # Red
-            red = 255
+            red = int(255 * ((0.99 - radioactivity) / 0.33))
             green = 0
             blue = 0
+        # Special color for the general waste disposal zone
+        elif radioactivity == 200:
+            red = 95
+            green = 95
+            blue = 95
+        # Special color for no waste, just ground
+        elif radioactivity == 10:
+            red = 217
+            green = 225
+            blue = 147
+        else:
+            # Default color for any other radioactivity value
+            red = 160
+            green = 147
+            blue = 225
 
         return "#{:02x}{:02x}{:02x}".format(red, green, blue)
-
 if __name__=="__main__":
     root = tk.Tk()
     root.geometry("400x300")
-    grid = HazardGrid(root, 15, 15, 15)
+    grid = HazardGrid(root, 15, 15, 3)
     grid.draw([(1, 1), (2, 2)], [(3, 3), (4, 4)])
     root.mainloop()
 
