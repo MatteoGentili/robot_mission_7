@@ -1,10 +1,6 @@
-from abc import ABC, abstractmethod
-from mesa import Agent, Model
-from mesa.time import RandomActivation
-from mesa.space import MultiGrid
+from mesa import Agent
 import random
 
-from objects import HazardGrid, WasteAgent, GreenWasteAgent, YellowWasteAgent, RedWasteAgent
 
 ##########################
 ###### Robot Agents ######
@@ -19,11 +15,16 @@ class Robot(Agent):
 
     def __init__(self, unique_id, model, pos):
         super().__init__(unique_id, model)
-        self.carry = 0
+        self.inventory = []
         self.go_east = False
-        self.action = ""
         self.pos = pos
         self.border = None
+        self.knowledge = {}
+        self.percepts = {}
+    
+    def update_knowledge(self):
+        for k,v in self.percepts.items():
+            self.knowledge[k] = v
 
     def get_new_pos(self):
         if self.go_east:
@@ -45,42 +46,50 @@ class GreenRobot(Robot):
     def __init__(self, unique_id, model, pos):
         super().__init__(unique_id, model, pos)
         self.border = self.model.width//3 - 1 # frontière de la zone verte
+        self.color = "green"
+
+        self.knowledge = {
+            "wastes": self.model.grid.get_wastes(),
+            "robots": self.model.grid.get_robots(),
+            "inventory": [],
+            "pos": self.pos,
+            "color": self.color,
+            "border": self.border
+        }
+        self.percepts = self.knowledge
 
 
-    def pick_up_waste(self):
-        if self.carry < 2:
-            if "is_green_waste" :  # TO COMPLETE
-                self.action = "pick_ip"
-                self.carry += 1
-                g = GreenWasteAgent("new_id", self.model, self.pos) # TO COMPLETE (ex : self.model.generate_new_id)
-                return g
-        
-        if self.carry == 2:
-            self.go_east = True
-
-    def drop_waste(self):
-        if self.pos[0] == self.border and self.carry == 2:
-            self.carry = 0
-            self.go_east = False
-            self.action = "drop"
-            y = YellowWasteAgent("new_id", self.model, self.pos) # TO COMPLETE (ex : self.model.generate_new_id)
-            return y
+    def deliberate(self, knowledge=None):
+        if knowledge is None:
+            knowledge = self.knowledge
+        # if not carrying 2 wastes, move towards (1 cell at a time) the closest waste of its color if not already on it
+        if len(self.inventory) < 2:
+            self.action = "move"
+            wastes = knowledge["wastes"][knowledge["color"]]
+            closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
+            if closest_waste.pos != knowledge["pos"]:
+                action = "move"
+                # move one cell towards the closest waste
+                pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
+                pos = min(pos, key=lambda p: self.model.grid.get_distance(p, closest_waste.pos))
+                return {"action": action, "pos": pos}
+            else:
+                action = "pick_up"
+                return {"action": action, "waste": closest_waste}
+        # if carrying 2 wastes, if not at the border of the zone, move east, else drop a yellow waste
+        else:
+            if knowledge["pos"][0] < knowledge["border"]:
+                action = "move"
+                pos = (knowledge["pos"][0] + 1, knowledge["pos"][1])
+                return {"action": action, "pos": pos}
+            else:
+                action = "drop"
+                return {"action": action}
 
     def step(self):
-
-        new_pos = self.get_new_pos()
-
-        if self.action == "" :
-            waste = self.pick_up_waste()
-
-        if self.action == "" :
-            waste = self.drop_waste()
-
-        else :
-            self.action = "move"
-
-        self.model.do(self, self.action, pos = new_pos, waste = waste)
-        self.action = ""
+        self.update_knowledge()
+        decision = self.deliberate(self.knowledge)
+        self.percepts = self.model.do(self, **decision)
 
 class YellowRobot(Robot):
     """

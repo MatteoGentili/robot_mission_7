@@ -3,6 +3,7 @@ from mesa.agent import Agent
 import matplotlib.pyplot as plt
 import numpy as np
 import tkinter as tk
+from agents import Robot
 
 ##################
 ###### Grid ######
@@ -41,8 +42,9 @@ import tkinter as tk
 #     grid.print([(1, 1), (2, 2)], [(3, 3), (4, 4)])
 
 
-class HazardGrid:
+class HazardGrid(MultiGrid):
     def __init__(self, master, width, height, n_zones=3):
+        super().__init__(width+1, height, False)
         self.master = master
         self.width = width
         self.height = height
@@ -55,6 +57,43 @@ class HazardGrid:
             # for each zone, assign a random radioactivity level
             random_values = np.random.uniform(i / n_zones, (i + 1) / n_zones, (self.height, self.zone_width))
             self.radioactivity_map[:, i*self.zone_width:(i+1)*self.zone_width] = random_values
+
+    def get_all_agents(self):
+        """
+        Get all the agents in the grid
+        """
+        agents = []
+        for cell in self.coord_iter():
+            cell_content, x, y = cell
+            for agent in cell_content:
+                agents.append(agent)
+        return agents
+
+
+    def get_wastes(self):
+        """
+        Get the wastes positions
+        Returns a dictionary with the type of waste as key and a list of positions as value
+        """
+        wastes = {
+            "green": [],
+            "yellow": [],
+            "red": []
+        }
+        for agent in self.get_all_agents():
+            if isinstance(agent, WasteAgent):
+                wastes[agent.type].append(agent.pos)
+        return wastes
+
+    def get_robots(self):
+        """
+        Get the robots positions
+        """
+        robots = []
+        for agent in self.get_all_agents():
+            if isinstance(agent, Robot):
+                robots.append(agent.pos)
+        return robots
 
     def draw(self, wastes_pos, robots_pos):
         """
@@ -122,6 +161,9 @@ class WasteAgent(Agent):
     def __init__(self, unique_id, model, pos):
         super().__init__(unique_id, model)
         self.pos = pos
+    
+    def step(self):
+        pass
 
 class GreenWasteAgent(WasteAgent):
     def __init__(self, unique_id, model, pos):
