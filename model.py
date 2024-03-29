@@ -69,7 +69,7 @@ class Environnement(Model):
                 waste = RedWasteAgent(self.next_id(), self, agent.pos)
             else:
                 waste = kwargs["waste"]
-                agent.inventory.remove(waste)
+            agent.inventory = []
             self.grid.place_agent(waste, agent.pos)
         else:
             print("Unknown action: ", action)
