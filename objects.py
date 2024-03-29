@@ -64,7 +64,7 @@ class HazardGrid(MultiGrid):
         """
         agents = []
         for cell in self.coord_iter():
-            cell_content, x, y = cell
+            cell_content, (x, y) = cell
             for agent in cell_content:
                 agents.append(agent)
         return agents
@@ -73,7 +73,7 @@ class HazardGrid(MultiGrid):
     def get_wastes(self):
         """
         Get the wastes positions
-        Returns a dictionary with the type of waste as key and a list of positions as value
+        Returns a dictionary with the type of waste as key and a list of agents as value
         """
         wastes = {
             "green": [],
@@ -82,7 +82,7 @@ class HazardGrid(MultiGrid):
         }
         for agent in self.get_all_agents():
             if isinstance(agent, WasteAgent):
-                wastes[agent.type].append(agent.pos)
+                wastes[agent.type.lower()].append(agent)
         return wastes
 
     def get_robots(self):
@@ -95,7 +95,15 @@ class HazardGrid(MultiGrid):
                 robots.append(agent.pos)
         return robots
 
-    def draw(self, wastes_pos, robots_pos):
+    def get_distance(self, pos1, pos2):
+        """
+        Get the Manhattan distance between two positions
+        """
+        if pos1 is None or pos2 is None:
+            return np.inf
+        return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
+
+    def draw(self):
         """
         Draw the grid with wastes and robots
         """
@@ -104,6 +112,15 @@ class HazardGrid(MultiGrid):
 
         canvas = tk.Canvas(self.master, width=self.width*cell_width, height=self.height*cell_height)
         canvas.pack()
+        wastes_pos = []
+        robots_pos = []
+        for agent in self.get_all_agents():
+            if isinstance(agent, WasteAgent):
+                if agent.pos is None:
+                    continue
+                wastes_pos.append(agent.pos)
+            elif isinstance(agent, Robot):
+                robots_pos.append(agent.pos)
 
         for i in range(self.height):
             for j in range(self.width+1):
@@ -123,6 +140,29 @@ class HazardGrid(MultiGrid):
             x = robot[0] * cell_width
             y = robot[1] * cell_height
             canvas.create_text(x, y, text="R", fill='red')
+    
+    def print(self):
+        """
+        Plot the grid with wastes and robots
+        """
+        wastes_pos = []
+        robots_pos = []
+        for agent in self.get_all_agents():
+            if isinstance(agent, WasteAgent):
+                if agent.pos is None:
+                    continue
+                wastes_pos.append(agent.pos)
+            elif isinstance(agent, Robot):
+                robots_pos.append(agent.pos)
+        fig, ax = plt.subplots()
+        ax.imshow(self.radioactivity_map, cmap='afmhot', interpolation='nearest')
+        for waste in wastes_pos:
+            # adds a "W" to the waste position
+            ax.text(waste[0], waste[1], "W", color='green', fontsize=12)
+        for robot in robots_pos:
+            # adds a "R" to the robot position
+            ax.text(robot[0], robot[1], "R", color='red', fontsize=12)
+        plt.show()
 
     def get_color(self, radioactivity):
         # Map radioactivity to shades of yellow, orange, and red

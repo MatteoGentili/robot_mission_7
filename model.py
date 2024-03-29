@@ -2,54 +2,65 @@ from mesa import Agent, Model
 from mesa.time import RandomActivation
 from mesa.datacollection import DataCollector
 import random
+import tkinter as tk
+from tqdm import trange
 
 from agents import GreenRobot, YellowRobot, RedRobot
 from objects import GreenWasteAgent, HazardGrid, WasteAgent, YellowWasteAgent, RedWasteAgent
 
 
 class Environnement(Model):
-    def __init__(self, Nr, Nw, L):
+    def __init__(self, Nr, Nw, L, H, debug=False):
         super().__init__()
-
+        self.debug = debug
         self.num_robots = Nr
         self.num_waste = Nw
 
         self.grid_len = L
-        self.scheduler = RandomActivation(self)
+        self.grid_height = H
+        self.schedule = RandomActivation(self)
         self.datacollector = DataCollector(
-            agent_reporters={"Carry": lambda a: len(a.inventory)},
+            agent_reporters={"Carry": lambda a: len(a.inventory) if hasattr(a, "inventory") else 0},
             model_reporters={"NbWaste": lambda m: len([a for a in m.schedule.agents if isinstance(a, WasteAgent)])}
         )
         
         # Grid
-        master = "TO COMPLETE"
-        self.grid = HazardGrid(master, L, 1, 1)
+        master = tk.Tk()
+        master.geometry("400x300")
+        self.master = master
+        self.grid = HazardGrid(master, L, H, 1)
 
         # Agents Waste
         # self.W = dict()
         for i in range (Nw):
-            pos = random.randint(0, L)
+            pos = (random.randint(0, L-1), random.randint(0, H-1))
             w = GreenWasteAgent(i, self, pos)
             self.grid.place_agent(w, pos)
             # self.W.append(w)
-            self.scheduler.add(w) # gerer par les données de radio-activité
+            self.schedule.add(w) # gerer par les données de radio-activité
 
         # Agents Robots
-        for i in range(self.num_agents):
-            pos = random.randint(0, L)
-            a = GreenRobot(i, self)  # Pass 'self' to give the agent access to the model
+        for i in range(Nr):
+            pos = (random.randint(0, L-1), random.randint(0, H-1))
+            a = GreenRobot(i, self, pos)
             self.grid.place_agent(a, pos)
-            self.scheduler.add(a)
+            self.schedule.add(a)
 
     def do(self, agent, action, **kwargs):
         if action == "move":
+            if self.debug:
+                print("Agent", agent.unique_id, "moving to", kwargs["pos"])
             self.grid.move_agent(agent, kwargs["pos"])
         elif action == "pick_up":
+            if self.debug:
+                print("Agent", agent.unique_id, "picking up waste", kwargs["waste"].unique_id)
             # remove the waste picked up from the grid
-            self.grid.remove(kwargs["waste"])
+            self.grid.remove_agent(kwargs["waste"])
             # add the waste picked up to the agent
             agent.inventory.append(kwargs["waste"])
         elif action == "drop":
+            if self.debug:
+                print("Agent", agent.unique_id, "dropping waste")
             # kwargs here is empty
             # add a transformed waste to the grid according to the agent's color
             if isinstance(agent, GreenRobot):
@@ -69,19 +80,14 @@ class Environnement(Model):
 
     # 1. this method performs only 1 step for all agents
     def one_step(self):
-        # get waste position
-        wPos = [w.pos() for w in self.W]
-
-        
-        distance_robot = []
 
         self.datacollector.collect(self)
-        self.scheduler.step()
+        self.schedule.step()
 
 
-        self.grid.draw()
+        # self.grid.draw()
 
     # 2. this method performs only n steps for all agents
     def run_n_steps(self,n):
-        for i in range(n):
+        for i in trange(n):
             self.one_step()

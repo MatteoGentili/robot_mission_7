@@ -45,15 +45,15 @@ class GreenRobot(Robot):
 
     def __init__(self, unique_id, model, pos):
         super().__init__(unique_id, model, pos)
-        self.border = self.model.width//3 - 1 # frontière de la zone verte
-        self.color = "green"
+        self.border = self.model.grid_len//3 - 1 # frontière de la zone verte
+        self.type = "green"
 
         self.knowledge = {
             "wastes": self.model.grid.get_wastes(),
             "robots": self.model.grid.get_robots(),
             "inventory": [],
             "pos": self.pos,
-            "color": self.color,
+            "color": self.type,
             "border": self.border
         }
         self.percepts = self.knowledge
@@ -66,6 +66,8 @@ class GreenRobot(Robot):
         if len(self.inventory) < 2:
             self.action = "move"
             wastes = knowledge["wastes"][knowledge["color"]]
+            if len(wastes) == 0:
+                return {"action": "move", "pos": self.get_new_pos()}
             closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
             if closest_waste.pos != knowledge["pos"]:
                 action = "move"
