@@ -2,6 +2,8 @@ from model import Environnement
 import seaborn as sns
 
 def main(nsteps=1):
+    # Nr = number of robots, Nw = number of wastes, L = grid length, H = grid height
+    # paramètres = (Nr, Nw, L, H, debug=False)
     environnement = Environnement(2, 5, 15, 3, True)
     environnement.run_n_steps(nsteps)
     environnement.grid.draw()
