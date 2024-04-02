@@ -47,6 +47,11 @@ class HazardGrid(MultiGrid):
     def __init__(self, master, width, height, n_zones=3):
         super().__init__(width, height, False)
         self.master = master
+        self.cell_width = 60
+        self.cell_height = 60
+
+        self.canvas = tk.Canvas(self.master, width=self.width*self.cell_width, height=self.height*self.cell_height+40)
+        self.canvas.pack()
         self.width = width
         self.height = height
         self.n_zones = n_zones
@@ -123,15 +128,11 @@ class HazardGrid(MultiGrid):
             return np.inf
         return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
 
-    def draw(self):
+    def draw(self, step):
         """
         Draw the grid with wastes and robots
         """
-        cell_width = 60
-        cell_height = 60
-
-        canvas = tk.Canvas(self.master, width=self.width*cell_width, height=self.height*cell_height)
-        canvas.pack()
+        self.canvas.delete("all")
         wastes_pos = {}
         robots_pos = {}
         for agent in self.get_all_agents():
@@ -144,33 +145,36 @@ class HazardGrid(MultiGrid):
 
         for i in range(self.height):
             for j in range(self.width):
-                x0 = j * cell_width
-                y0 = i * cell_height
-                x1 = x0 + cell_width
-                y1 = y0 + cell_height
+                x0 = j * self.cell_width
+                y0 = i * self.cell_height
+                x1 = x0 + self.cell_width
+                y1 = y0 + self.cell_height
                 color = self.get_color(self.radioactivity_map[i][j])
-                canvas.create_rectangle(x0, y0, x1, y1, fill=color)
+                self.canvas.create_rectangle(x0, y0, x1, y1, fill=color)
 
         for waste in wastes_pos:
             pos = wastes_pos[waste]
-            x = pos[0] * cell_width + cell_width / 2
-            y = pos[1] * cell_height + cell_height / 2
+            x = pos[0] * self.cell_width + self.cell_width / 2
+            y = pos[1] * self.cell_height + self.cell_height / 2
             fill = 'green' if waste.type == "Green" else 'yellow' if waste.type == "Yellow" else 'red'
             # make the letter more visible by adding a black outline
-            text_item = canvas.create_text(x, y, text="W", fill=fill, anchor='center', font=("Helvetica", 16, "bold"))
-            bbox = canvas.bbox(text_item)
-            rect_item = canvas.create_rectangle(bbox, outline="white", fill="black")
-            canvas.tag_raise(text_item,rect_item)
+            text_item = self.canvas.create_text(x, y, text="W", fill=fill, anchor='center', font=("Helvetica", 16, "bold"))
+            bbox = self.canvas.bbox(text_item)
+            rect_item = self.canvas.create_rectangle(bbox, outline="white", fill="black")
+            self.canvas.tag_raise(text_item,rect_item)
 
         for robot in robots_pos:
             pos = robots_pos[robot]
-            x = pos[0] * cell_width + cell_width / 2
-            y = pos[1] * cell_height + cell_height / 2
+            x = pos[0] * self.cell_width + self.cell_width / 2
+            y = pos[1] * self.cell_height + self.cell_height / 2
             fill = 'green' if robot.type == "green" else 'yellow' if robot.type == "yellow" else 'red'
-            text_item = canvas.create_text(x, y, text="R", fill=fill, anchor='center', font=("Helvetica", 16, "bold"))
-            bbox = canvas.bbox(text_item)
-            rect_item = canvas.create_rectangle(bbox, outline="white", fill="black")
-            canvas.tag_raise(text_item,rect_item)
+            text_item = self.canvas.create_text(x, y, text="R", fill=fill, anchor='center', font=("Helvetica", 16, "bold"))
+            bbox = self.canvas.bbox(text_item)
+            rect_item = self.canvas.create_rectangle(bbox, outline="white", fill="black")
+            self.canvas.tag_raise(text_item,rect_item)
+        
+        # add text below the grid to show the current step
+        self.canvas.create_text(20, self.height * self.cell_height + 10, anchor='w', text=f"Step {step}", font=("Helvetica", 16, "bold"))
     
     def print(self):
         """

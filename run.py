@@ -12,7 +12,7 @@ def main(nsteps=1):
     
     environnement.run_n_steps(nsteps)
     # environnement.grid.print()
-    environnement.grid.draw()
+    # environnement.grid.draw()
     environnement.master.mainloop()
     agent_inventory = environnement.datacollector.get_agent_vars_dataframe()
     last_step = agent_inventory.index.get_level_values('Step').max()

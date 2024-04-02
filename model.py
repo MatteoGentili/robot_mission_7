@@ -4,6 +4,7 @@ from mesa.datacollection import DataCollector
 import random
 import tkinter as tk
 from tqdm import trange
+from time import sleep
 
 from agents import GreenRobot, YellowRobot, RedRobot
 from objects import GreenWasteAgent, HazardGrid, WasteAgent, YellowWasteAgent, RedWasteAgent
@@ -28,7 +29,9 @@ class Environnement(Model):
         
         # Grid
         master = tk.Tk()
-        master.geometry("600x300")
+        width = L*60+40
+        height = H*60+40
+        master.geometry(f"{width}x{height}")
         self.master = master
         # Paramètres = (master, width, height, n_zones=3)
         self.grid = HazardGrid(master, L, H, 3)
@@ -92,9 +95,10 @@ class Environnement(Model):
 
         self.datacollector.collect(self)
         self.schedule.step()
-
-
-        # self.grid.draw()
+        step = self.schedule.steps
+        self.grid.draw(step)
+        self.master.update()
+        sleep(0.1)
 
     # 2. this method performs only n steps for all agents
     def run_n_steps(self,n):
