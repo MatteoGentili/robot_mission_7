@@ -30,10 +30,10 @@ Les robots verts et jaunes ont les mêmes fonctions `deliberate` : ils cherchent
 Les robots rouges ont une fonction `deliberate` différente : ils cherchent le déchet le plus proche et se déplacent pour le transporter directement dans la zone de dépose finale.
 
 ## Run
-Pour lancer la simulation, il suffit de lancer le script `run.py` avec la commande `python run.py`. Cela va lancer le programme pour 500 pas de simulation.
+Pour lancer la simulation, il suffit de lancer le script `run.py` avec la commande `python run.py`. Cela va lancer le programme pour 200 pas de simulation.
+Durant la simulation, une fenêtre s'ouvre montrant l'état actuel de la grille. De plus, de nouveaux déchets peuvent apparaître aléatoirement sur la grille avec une probabilité de 0.15.
 
-A la fin de la simulation, une fenêtre montrant l'état final de la grille s'ouvre.
-3 images sont aussi générées :
-- `nbwastes_carried.png` : le nombre de déchets transportés par chaque robot
+2 images sont aussi générées :
+<!-- - `nbwastes_carried.png` : le nombre de déchets transportés par chaque robot -->
 - `wastes_remaining.png` : le nombre de déchets restants sur la grille
 - `wastes_fullrecycled.png` : le nombre de déchets recyclés par les robots rouges

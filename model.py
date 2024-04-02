@@ -13,6 +13,7 @@ from objects import GreenWasteAgent, HazardGrid, WasteAgent, YellowWasteAgent, R
 class Environnement(Model):
     def __init__(self, Nr, Nw, L, H, debug=False):
         super().__init__()
+        self.spawn_rate = 0.15
         self.debug = debug
         self.num_robots = Nr
         self.num_waste = Nw
@@ -88,7 +89,14 @@ class Environnement(Model):
         percepts = {"pos": agent.pos, "inventory": agent.inventory, "wastes": self.grid.get_wastes(), "robots": self.grid.get_robots()}
         return percepts
 
-
+    def spawn(self, spawn_rate):
+        if random.random() < spawn_rate:
+            pos = (random.randint(0, self.grid_len//3-1), random.randint(0, self.grid_height-1))
+            w = GreenWasteAgent(self.next_id(), self, pos)
+            self.grid.place_agent(w, pos)
+            self.schedule.add(w)
+            if self.debug:
+                print("New waste spawned at", pos)
 
     # 1. this method performs only 1 step for all agents
     def one_step(self):
@@ -99,6 +107,7 @@ class Environnement(Model):
         self.grid.draw(step)
         self.master.update()
         sleep(0.1)
+        self.spawn(self.spawn_rate)
 
     # 2. this method performs only n steps for all agents
     def run_n_steps(self,n):
