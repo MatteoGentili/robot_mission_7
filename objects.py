@@ -205,19 +205,19 @@ class HazardGrid(MultiGrid):
 
     def get_color(self, radioactivity):
         # Map radioactivity to shades of yellow, orange, and red
-        if radioactivity < 0.33:
+        if radioactivity < 1/3:
             # Green to dark green
             red = 0
-            green = int(255 * (radioactivity / 0.33))
+            green = int(255 * (radioactivity / (1/3)))
             blue = 0
-        elif radioactivity < 0.66:
+        elif radioactivity < 2/3:
             # Yellow to orange
             red = 230
-            green = int(255 * ((0.66 - radioactivity) / 0.33))
+            green = int(255 * ((2/3 - radioactivity) / (1/3)))
             blue = 0
-        elif radioactivity > 0.66 and radioactivity < 1:
+        elif radioactivity > 2/3 and radioactivity < 1:
             # Red
-            red = int(255 * ((0.99 - radioactivity) / 0.33))
+            red = int(255 * ((1 - radioactivity) / (1/3)))
             green = 0
             blue = 0
         # Special color for the general waste disposal zone

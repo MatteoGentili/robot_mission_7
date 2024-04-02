@@ -3,8 +3,8 @@ import seaborn as sns
 
 def main(nsteps=1):
     robots_numbers = [3, 3, 3]
-    NbWastes = 10
-    GridLen = 15
+    NbWastes = 16
+    GridLen = 21
     GridHeight = 3
     environnement = Environnement(robots_numbers, NbWastes, GridLen, GridHeight, False)
     # print(environnement.grid.radioactivity_map.shape)
@@ -53,4 +53,4 @@ def main(nsteps=1):
     g.figure.clear()
 
 if __name__ == "__main__":
-    main(500)
+    main(100)

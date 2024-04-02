@@ -41,8 +41,14 @@ class Robot(Agent):
         if len(self.inventory) < 2:
             self.action = "move"
             wastes = knowledge["wastes"][knowledge["color"]]
-            if len(wastes) == 0: # No waste of its color, then idle
-                return {"action": "move", "pos": knowledge["pos"], "objective": "idle"}
+            if len(wastes) == 0: # No waste of its color, then idle : move to a random cell
+                pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
+                pos = [p for p in pos if knowledge["radioactivity"].T[p] <= knowledge["radioactivity_limit"]]
+                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["green"]]]
+                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
+                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
+                pos = random.choice(pos) if len(pos) > 0 else knowledge["pos"]
+                return {"action": "move", "pos": pos, "objective": "idle"}
             closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
             if closest_waste.pos != knowledge["pos"]:
                 action = "move"
@@ -163,8 +169,13 @@ class RedRobot(Robot):
         if len(self.inventory) < 1:
             self.action = "move"
             wastes = knowledge["wastes"][knowledge["color"]]
-            if len(wastes) == 0:
-                return {"action": "move", "pos": knowledge["pos"], "objective": "idle"}
+            if len(wastes) == 0: # No waste of its color, then idle : move to a random cell
+                pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
+                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["green"]]]
+                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
+                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
+                pos = random.choice(pos) if len(pos) > 0 else knowledge["pos"]
+                return {"action": "move", "pos": pos, "objective": "idle"}
             closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
             if closest_waste.pos != knowledge["pos"]:
                 action = "move"
