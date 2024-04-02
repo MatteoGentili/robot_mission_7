@@ -48,10 +48,16 @@ class Robot(Agent):
                 action = "move"
                 # move one cell towards the closest waste
                 pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["green"]]]
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
-                pos = min(pos, key=lambda p: self.model.grid.get_distance(p, closest_waste.pos)) if len(pos) > 0 else knowledge["pos"]
+                pos = [p for p in pos if knowledge["radioactivity"].T[p] <= knowledge["radioactivity_limit"]]
+                distances = [self.model.grid.get_distance(p, closest_waste.pos) for p in pos] if len(pos) > 0 else None
+                if distances is not None:
+                    all_closest_pos = [p for p in pos if self.model.grid.get_distance(p, closest_waste.pos) == min(distances)]
+                    all_closest_pos = [p for p in all_closest_pos if p not in [r.pos for r in knowledge["robots"]["green"]]]
+                    all_closest_pos = [p for p in all_closest_pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
+                    all_closest_pos = [p for p in all_closest_pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
+                    pos = random.choice(all_closest_pos) if len(all_closest_pos) > 0 else knowledge["pos"]
+                else:
+                    pos = knowledge["pos"]
                 return {"action": action, "pos": pos, "objective": f"pick up the closest waste which is in {closest_waste.pos}"}
             else:
                 action = "pick_up"
@@ -91,7 +97,9 @@ class GreenRobot(Robot):
             "inventory": [],
             "pos": self.pos,
             "color": self.type,
-            "border": self.border
+            "border": self.border,
+            "radioactivity": self.model.grid.radioactivity_map,
+            "radioactivity_limit": 1/3
         }
         self.percepts = self.knowledge
 
@@ -116,7 +124,9 @@ class YellowRobot(Robot):
             "inventory": [],
             "pos": self.pos,
             "color": self.type,
-            "border": self.border
+            "border": self.border,
+            "radioactivity": self.model.grid.radioactivity_map,
+            "radioactivity_limit": 2/3
         }
         self.percepts = self.knowledge
 
@@ -160,11 +170,16 @@ class RedRobot(Robot):
                 action = "move"
                 # move one cell towards the closest waste
                 pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["green"]]]
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
-                pos = min(pos, key=lambda p: self.model.grid.get_distance(p, closest_waste.pos)) if len(pos) > 0 else knowledge["pos"]
-                return {"action": action, "pos": pos, "objective": "pick up the closest waste"}
+                distances = [self.model.grid.get_distance(p, closest_waste.pos) for p in pos] if len(pos) > 0 else None
+                if distances is not None:
+                    all_closest_pos = [p for p in pos if self.model.grid.get_distance(p, closest_waste.pos) == min(distances)]
+                    all_closest_pos = [p for p in all_closest_pos if p not in [r.pos for r in knowledge["robots"]["green"]]]
+                    all_closest_pos = [p for p in all_closest_pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
+                    all_closest_pos = [p for p in all_closest_pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
+                    pos = random.choice(all_closest_pos) if len(all_closest_pos) > 0 else knowledge["pos"]
+                else:
+                    pos = knowledge["pos"]
+                return {"action": action, "pos": pos, "objective": f"pick up the closest waste which is in {closest_waste.pos}"}
             else:
                 action = "pick_up"
                 return {"action": action, "waste": closest_waste}

@@ -18,10 +18,12 @@ class Environnement(Model):
 
         self.grid_len = L
         self.grid_height = H
+        self.full_recycled = 0
         self.schedule = RandomActivation(self)
         self.datacollector = DataCollector(
             agent_reporters={"Carry": lambda a: len(a.inventory) if hasattr(a, "inventory") else 0},
-            model_reporters={"NbWaste": lambda m: len([a for a in m.schedule.agents if isinstance(a, WasteAgent)])}
+            model_reporters={"NbWaste": lambda m: len([a for a in m.schedule.agents if isinstance(a, WasteAgent) and a.pos is not None]),
+                             "FullRecycled": lambda m: m.full_recycled}
         )
         
         # Grid
@@ -75,6 +77,7 @@ class Environnement(Model):
                 waste = RedWasteAgent(self.next_id(), self, agent.pos)
             else:
                 waste = None
+                self.full_recycled += 1
             agent.inventory = []
             self.grid.place_agent(waste, agent.pos) if waste is not None else None
         else:
