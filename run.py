@@ -1,11 +1,9 @@
 from model import Environnement
 import seaborn as sns
+import argparse
 
-def main(nsteps=1):
-    robots_numbers = [3, 3, 3]
-    NbWastes = 16
-    GridLen = 21
-    GridHeight = 3
+def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3, nsteps=50):
+    
     environnement = Environnement(robots_numbers, NbWastes, GridLen, GridHeight, False)
     # print(environnement.grid.radioactivity_map.shape)
     # print(len(environnement.grid._grid), len(environnement.grid._grid[0]))
@@ -53,4 +51,19 @@ def main(nsteps=1):
     g.figure.clear()
 
 if __name__ == "__main__":
-    main(200)
+
+    parser = argparse.ArgumentParser(description = 'Choose the parameters for the simulation')
+
+    # Ajoute tous les paramètres de la fonction main
+    parser.add_argument('--green_robot', type=int, default=3, help='Number of green robots')
+    parser.add_argument('--yellow_robot', type=int, default=3, help='Number of yellow robots')
+    parser.add_argument('--red_robot', type=int, default=3, help='Number of red robots')
+    parser.add_argument('--NbWastes', type=int, default=16, help='Number of wastes')
+    parser.add_argument('--GridLen', type=int, default=21, help='Grid length')
+    parser.add_argument('--GridHeight', type=int, default=3, help='Grid height')
+    parser.add_argument('--nsteps', type=int, default=50, help='Number of steps')
+
+    # Run la fonction main avec ces paramètres
+    args = parser.parse_args()
+    main([args.green_robot, args.yellow_robot, args.red_robot], args.NbWastes, args.GridLen, args.GridHeight, args.nsteps)
+

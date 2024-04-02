@@ -1,0 +1,6 @@
+mesa == 2.2.4
+numpy == 1.22.4
+seaborn == 0.12.2
+tkinter == 8.6
+tqdm == 4.63.1
+argparse == 1.1
