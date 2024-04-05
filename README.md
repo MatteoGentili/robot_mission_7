@@ -35,6 +35,7 @@ Le code utilise plusieurs bibliothèques, notamment pour la gestion de l'environ
 ```pip install -r requirements.txt```.
 
 Pour lancer la simulation, il suffit de lancer le script `run.py` avec la commande :
+
 ```python -m run --green_robot 3 --yellow_robot 3 --red_robot 3 --NbWaste 16 --GridLen 21 --GridHeight 3 --nsteps 50```. 
 Cela va lancer le programme avec les paramètres choisis. La commande ci-dessus montre les paramètres par défaut, qui fonctionne aussi simplement avec la commande `python -m run`. Les paramètres peuvent être choisis indépendamment, ceux qui ne sont pas explicité dans la commande seront mis à leur valeur par défaut.
 
