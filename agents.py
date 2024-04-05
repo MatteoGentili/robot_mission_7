@@ -111,7 +111,8 @@ class GreenRobot(Robot):
 
 
 class CommunicatingGreenRobot(GreenRobot):
-    pass
+    def __init__(self, unique_id, model, pos):
+        super().__init__(unique_id, model, pos)
 
 
 class YellowRobot(Robot):
@@ -141,7 +142,8 @@ class YellowRobot(Robot):
         self.percepts = self.knowledge
 
 class CommunicatingYellowRobot(YellowRobot):
-    pass
+    def __init__(self, unique_id, model, pos):
+        super().__init__(unique_id, model, pos)
 
 class RedRobot(Robot):
     """
@@ -215,4 +217,5 @@ class RedRobot(Robot):
                 return {"action": action, "waste": self.inventory[0]}
 
 class CommunicatingRedRobot(RedRobot):
-    pass
+    def __init__(self, unique_id, model, pos):
+        super().__init__(unique_id, model, pos)
