@@ -110,6 +110,10 @@ class GreenRobot(Robot):
         self.percepts = self.knowledge
 
 
+class CommunicatingGreenRobot(GreenRobot):
+    pass
+
+
 class YellowRobot(Robot):
     """
     Yellow Robot:
@@ -136,6 +140,8 @@ class YellowRobot(Robot):
         }
         self.percepts = self.knowledge
 
+class CommunicatingYellowRobot(YellowRobot):
+    pass
 
 class RedRobot(Robot):
     """
@@ -208,3 +214,5 @@ class RedRobot(Robot):
                 action = "drop"
                 return {"action": action, "waste": self.inventory[0]}
 
+class CommunicatingRedRobot(RedRobot):
+    pass
