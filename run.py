@@ -8,7 +8,7 @@ def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3
     # print(environnement.grid.radioactivity_map.shape)
     # print(len(environnement.grid._grid), len(environnement.grid._grid[0]))
     
-    environnement.run_n_steps(nsteps)
+    environnement.run_while()
     # environnement.grid.print()
     # environnement.grid.draw()
     environnement.master.mainloop()

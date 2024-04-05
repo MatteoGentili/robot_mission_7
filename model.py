@@ -13,7 +13,7 @@ from objects import GreenWasteAgent, HazardGrid, WasteAgent, YellowWasteAgent, R
 class Environnement(Model):
     def __init__(self, Nr, Nw, L, H, debug=False):
         super().__init__()
-        self.spawn_rate = 0.15
+        self.spawn_rate = 0.0
         self.debug = debug
         self.num_robots = Nr
         self.num_waste = Nw
@@ -39,13 +39,28 @@ class Environnement(Model):
 
         # Agents Waste
         # self.W = dict()
-        for i in range (Nw):
+        Nwg, Nwy, Nwr = int(Nw*0.7), int(Nw*0.2), int(Nw*0.1)
+        for i in range (Nwg):
             # put green wastes in the first zone
             pos = (random.randint(0, L//3-1), random.randint(0, H-1))
             w = GreenWasteAgent(self.next_id(), self, pos)
             self.grid.place_agent(w, pos)
             # self.W.append(w)
             self.schedule.add(w) # gerer par les données de radio-activité
+        for i in range (Nwy):
+            # put yellow wastes in the second zone
+            pos = (random.randint(L//3, 2*L//3-1), random.randint(0, H-1))
+            w = YellowWasteAgent(self.next_id(), self, pos)
+            self.grid.place_agent(w, pos)
+            # self.W.append(w)
+            self.schedule.add(w)
+        for i in range (Nwr):
+            # put red wastes in the third zone
+            pos = (random.randint(2*L//3, L-1), random.randint(0, H-1))
+            w = RedWasteAgent(self.next_id(), self, pos)
+            self.grid.place_agent(w, pos)
+            # self.W.append(w)
+            self.schedule.add(w)
 
         # Agents Robots
         robot_classes = [GreenRobot, YellowRobot, RedRobot]
@@ -77,8 +92,10 @@ class Environnement(Model):
             # add a transformed waste to the grid according to the agent's color
             if isinstance(agent, GreenRobot):
                 waste = YellowWasteAgent(self.next_id(), self, agent.pos)
+                self.schedule.add(waste)
             elif isinstance(agent, YellowRobot):
                 waste = RedWasteAgent(self.next_id(), self, agent.pos)
+                self.schedule.add(waste)
             else:
                 waste = None
                 self.full_recycled += 1
@@ -108,8 +125,29 @@ class Environnement(Model):
         self.master.update()
         sleep(0.1)
         self.spawn(self.spawn_rate)
+    
+    def count_wastes(self):
+        return len([a for a in self.schedule.agents if isinstance(a, WasteAgent) and a.pos is not None])
 
     # 2. this method performs only n steps for all agents
     def run_n_steps(self,n):
         for i in trange(n):
+            self.one_step()
+
+    def terminated(self):
+        if self.count_wastes() == 0:
+            # check robots' inventories and see if green or yellow robots have 2 wastes, or red robots have 1 waste
+            for a in self.schedule.agents:
+                if isinstance(a, GreenRobot) or isinstance(a, YellowRobot):
+                    if len(a.inventory) == 2:
+                        return False
+                elif isinstance(a, RedRobot):
+                    if len(a.inventory) == 1:
+                        return False
+            return True
+        return False
+    
+    def run_while(self):
+        while not self.terminated():
+            # print(self.count_wastes())
             self.one_step()

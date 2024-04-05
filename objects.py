@@ -158,7 +158,7 @@ class HazardGrid(MultiGrid):
             y = pos[1] * self.cell_height + self.cell_height / 2
             fill = 'green' if waste.type == "Green" else 'yellow' if waste.type == "Yellow" else 'red'
             # make the letter more visible by adding a black outline
-            text_item = self.canvas.create_text(x, y, text="W", fill=fill, anchor='center', font=("Helvetica", 16, "bold"))
+            text_item = self.canvas.create_text(x, y, text="■", fill=fill, anchor='center', font=("Helvetica", 16, "bold"))
             bbox = self.canvas.bbox(text_item)
             rect_item = self.canvas.create_rectangle(bbox, outline="white", fill="black")
             self.canvas.tag_raise(text_item,rect_item)
@@ -168,7 +168,7 @@ class HazardGrid(MultiGrid):
             x = pos[0] * self.cell_width + self.cell_width / 2
             y = pos[1] * self.cell_height + self.cell_height / 2
             fill = 'green' if robot.type == "green" else 'yellow' if robot.type == "yellow" else 'red'
-            text_item = self.canvas.create_text(x, y, text="R", fill=fill, anchor='center', font=("Helvetica", 16, "bold"))
+            text_item = self.canvas.create_text(x, y, text="ඞ", fill=fill, anchor='center', font=("Helvetica", 16, "bold"))
             bbox = self.canvas.bbox(text_item)
             rect_item = self.canvas.create_rectangle(bbox, outline="white", fill="black")
             self.canvas.tag_raise(text_item,rect_item)
