@@ -2,7 +2,7 @@ from model import Environnement
 import seaborn as sns
 import argparse
 
-def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3, nsteps=50):
+def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3):
     
     environnement = Environnement(robots_numbers, NbWastes, GridLen, GridHeight, False)
     # print(environnement.grid.radioactivity_map.shape)
