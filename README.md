@@ -44,7 +44,7 @@ Cela va lancer le programme avec les paramètres choisis. La commande ci-dessus 
 Le paramètre _GridLen_ doit être un multiple de 3.
 Durant la simulation, une fenêtre s'ouvre montrant l'état actuel de la grille. De plus, de nouveaux déchets peuvent apparaître aléatoirement sur la grille avec une probabilité de 0.15.
 
-2 images sont aussi générées :
+2 images sont aussi générées dans le dossier figures :
 <!-- - `nbwastes_carried.png` : le nombre de déchets transportés par chaque robot -->
 - `wastes_remaining.png` : le nombre de déchets restants sur la grille
 - `wastes_fullrecycled.png` : le nombre de déchets recyclés par les robots rouges
