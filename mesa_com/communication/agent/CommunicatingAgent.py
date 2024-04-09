@@ -2,8 +2,8 @@
 
 from mesa import Agent
 
-from communication.mailbox.Mailbox import Mailbox
-from communication.message.MessageService import MessageService
+from ..mailbox.Mailbox import Mailbox
+from ..message.MessageService import MessageService
 
 
 class CommunicatingAgent(Agent):

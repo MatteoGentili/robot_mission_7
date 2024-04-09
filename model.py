@@ -6,8 +6,10 @@ import tkinter as tk
 from tqdm import trange
 from time import sleep
 
-from agents import GreenRobot, YellowRobot, RedRobot
+from agents import GreenRobot, YellowRobot, RedRobot, CommunicatingGreenRobot, CommunicatingYellowRobot, CommunicatingRedRobot
 from objects import GreenWasteAgent, HazardGrid, WasteAgent, YellowWasteAgent, RedWasteAgent
+
+from mesa_com.communication import MessageService
 
 
 class Environnement(Model):
@@ -37,26 +39,29 @@ class Environnement(Model):
         # Paramètres = (master, width, height, n_zones=3)
         self.grid = HazardGrid(master, L, H, 3)
 
+        self.spawn_agents()
+
+    def spawn_agents(self):
         # Agents Waste
         # self.W = dict()
-        Nwg, Nwy, Nwr = int(Nw*0.7), int(Nw*0.2), int(Nw*0.1)
+        Nwg, Nwy, Nwr = int(self.num_waste*0.7), int(self.num_waste*0.2), int(self.num_waste*0.1)
         for i in range (Nwg):
             # put green wastes in the first zone
-            pos = (random.randint(0, L//3-1), random.randint(0, H-1))
+            pos = (random.randint(0, self.grid_len//3-1), random.randint(0, self.grid_height-1))
             w = GreenWasteAgent(self.next_id(), self, pos)
             self.grid.place_agent(w, pos)
             # self.W.append(w)
             self.schedule.add(w) # gerer par les données de radio-activité
         for i in range (Nwy):
             # put yellow wastes in the second zone
-            pos = (random.randint(L//3, 2*L//3-1), random.randint(0, H-1))
+            pos = (random.randint(self.grid_len//3, 2*self.grid_len//3-1), random.randint(0, self.grid_height-1))
             w = YellowWasteAgent(self.next_id(), self, pos)
             self.grid.place_agent(w, pos)
             # self.W.append(w)
             self.schedule.add(w)
         for i in range (Nwr):
             # put red wastes in the third zone
-            pos = (random.randint(2*L//3, L-1), random.randint(0, H-1))
+            pos = (random.randint(2*self.grid_len//3, self.grid_len-1), random.randint(0, self.grid_height-1))
             w = RedWasteAgent(self.next_id(), self, pos)
             self.grid.place_agent(w, pos)
             # self.W.append(w)
@@ -64,10 +69,10 @@ class Environnement(Model):
 
         # Agents Robots
         robot_classes = [GreenRobot, YellowRobot, RedRobot]
-        for nb, classe, i in zip(Nr, robot_classes, range(len(Nr))):
+        for nb, classe, i in zip(self.num_robots, robot_classes, range(len(self.num_robots))):
             for j in range(nb):
                 # get a random position in the according zone
-                pos = random.randint(i*L//3, (i+1)*L//3-1), random.randint(0, H-1)
+                pos = random.randint(i*self.grid_len//3, (i+1)*self.grid_len//3-1), random.randint(0, self.grid_height-1)
                 a = classe(self.next_id(), self, pos)
                 self.grid.place_agent(a, pos)
                 self.schedule.add(a)
@@ -151,3 +156,58 @@ class Environnement(Model):
         while not self.terminated():
             # print(self.count_wastes())
             self.one_step()
+
+
+class CommunicationEnvironnement(Environnement):
+    def __init__(self, Nr, Nw, L, H, debug=False):
+        super().__init__(Nr, Nw, L, H, debug)
+        self.__messages_service = MessageService(self.schedule)
+    
+    def spawn_agents(self):
+        # Agents Waste
+        # self.W = dict()
+        Nwg, Nwy, Nwr = int(self.num_waste*0.7), int(self.num_waste*0.2), int(self.num_waste*0.1)
+        for i in range (Nwg):
+            # put green wastes in the first zone
+            pos = (random.randint(0, self.grid_len//3-1), random.randint(0, self.grid_height-1))
+            w = GreenWasteAgent(self.next_id(), self, pos)
+            self.grid.place_agent(w, pos)
+            # self.W.append(w)
+            self.schedule.add(w) # gerer par les données de radio-activité
+        for i in range (Nwy):
+            # put yellow wastes in the second zone
+            pos = (random.randint(self.grid_len//3, 2*self.grid_len//3-1), random.randint(0, self.grid_height-1))
+            w = YellowWasteAgent(self.next_id(), self, pos)
+            self.grid.place_agent(w, pos)
+            # self.W.append(w)
+            self.schedule.add(w)
+        for i in range (Nwr):
+            # put red wastes in the third zone
+            pos = (random.randint(2*self.grid_len//3, self.grid_len-1), random.randint(0, self.grid_height-1))
+            w = RedWasteAgent(self.next_id(), self, pos)
+            self.grid.place_agent(w, pos)
+            # self.W.append(w)
+            self.schedule.add(w)
+
+        # Agents Robots
+        robot_classes = [CommunicatingGreenRobot, CommunicatingYellowRobot, CommunicatingRedRobot]
+        for nb, classe, i in zip(self.num_robots, robot_classes, range(len(self.num_robots))):
+            for j in range(nb):
+                # get a random position in the according zone
+                pos = random.randint(i*self.grid_len//3, (i+1)*self.grid_len//3-1), random.randint(0, self.grid_height-1)
+                a = classe(self.next_id(), self, pos)
+                self.grid.place_agent(a, pos)
+                self.schedule.add(a)
+                # print(a.border, a.type)
+
+    def one_step(self):
+
+        self.datacollector.collect(self)
+        self.__messages_service.dispatch_messages()
+
+        self.schedule.step()
+        step = self.schedule.steps
+        self.grid.draw(step)
+        self.master.update()
+        sleep(0.1)
+        self.spawn(self.spawn_rate)

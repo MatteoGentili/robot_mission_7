@@ -3,7 +3,7 @@
 Testing all the functionalities of the communication package.
 """
 
-from mesa import Model
+from mesa_com import Model
 from mesa.time import RandomActivation
 
 from communication.agent.CommunicatingAgent import CommunicatingAgent

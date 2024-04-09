@@ -1,11 +1,11 @@
-from model import Environnement
+from model import Environnement, CommunicationEnvironnement
 import seaborn as sns
 import argparse
 import os
 
 def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3):
     
-    environnement = Environnement(robots_numbers, NbWastes, GridLen, GridHeight, False)
+    environnement = CommunicationEnvironnement(robots_numbers, NbWastes, GridLen, GridHeight, False)
     # print(environnement.grid.radioactivity_map.shape)
     # print(len(environnement.grid._grid), len(environnement.grid._grid[0]))
     
