@@ -175,7 +175,12 @@ class CommunicatingGreenRobot(GreenRobot, CommunicatingAgent):
                             # print(f"{self.get_name()} told {self.target_robot.get_name()} that he is going to regroup with him")
                             return {"action": "move", "pos": pos, "objective": "regroup", "target": self.target_robot.pos}
                         else:
-                            return {"action": "give", "waste": self.inventory[0], "dest": self.target_robot}
+                            # take if ok
+                            if len(self.target_robot.inventory) > 0:
+                                return {"action": "take", "waste": self.inventory[0], "src": self.target_robot}
+                            else:
+                                # idle if not
+                                return {"action": "move", "pos": knowledge["pos"], "objective": "idle"}
 
             # closest = []
             # for waste in wastes:
@@ -310,7 +315,12 @@ class CommunicatingYellowRobot(YellowRobot, CommunicatingAgent):
                             # print(f"{self.get_name()} told {self.target_robot.get_name()} that he is going to regroup with him")
                             return {"action": "move", "pos": pos, "objective": "regroup", "target": self.target_robot.pos}
                         else:
-                            return {"action": "give", "waste": self.inventory[0], "dest": self.target_robot}
+                            # take if ok
+                            if len(self.target_robot.inventory) > 0:
+                                return {"action": "take", "waste": self.inventory[0], "src": self.target_robot}
+                            else:
+                                # idle if not
+                                return {"action": "move", "pos": knowledge["pos"], "objective": "idle"}
 
             # closest = []
             # for waste in wastes:
@@ -434,7 +444,7 @@ class CommunicatingRedRobot(RedRobot, CommunicatingAgent):
             knowledge = self.knowledge
 
         # remove all wastes that were broadcasted
-        messages = self.get_new_messages()
+        messages = self.get_messages()
         for message in messages:
             if message.get_performative() == MessagePerformative.INFORM_REF:
                 waste = message.get_content()

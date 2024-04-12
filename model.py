@@ -142,6 +142,14 @@ class Environnement(Model):
             waste = src.inventory.pop()
             dst.inventory.append(waste)
             grid_wastes = self.grid.get_wastes()
+        
+        elif action == "take":
+            src, dst = kwargs["src"], agent
+            if self.debug:
+                print(src.type, "Agent", src.unique_id, "giving waste to", dst.type, "Agent", dst.unique_id)
+            waste = src.inventory.pop()
+            dst.inventory.append(waste)
+            grid_wastes = self.grid.get_wastes()
         else:
             print("Unknown action: ", action)
         percepts = {"pos": agent.pos, "inventory": agent.inventory, "wastes": grid_wastes, "robots": self.grid.get_robots()}
