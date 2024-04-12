@@ -13,10 +13,11 @@ from mesa_com.communication import MessageService
 
 
 class Environnement(Model):
-    def __init__(self, Nr, Nw, L, H, debug=False):
+    def __init__(self, Nr, Nw, L, H, debug=False, draw=True):
         super().__init__()
         self.spawn_rate = 0.0
         self.debug = debug
+        self.draw = draw
         self.num_robots = Nr
         self.num_waste = Nw
 
@@ -155,7 +156,8 @@ class Environnement(Model):
         self.datacollector.collect(self)
         self.schedule.step()
         step = self.schedule.steps
-        self.grid.draw(step)
+        if self.draw:
+            self.grid.draw(step)
         self.master.update()
         sleep(0.1)
         self.spawn(self.spawn_rate)
@@ -188,8 +190,8 @@ class Environnement(Model):
 
 
 class CommunicationEnvironnement(Environnement):
-    def __init__(self, Nr, Nw, L, H, debug=False):
-        super().__init__(Nr, Nw, L, H, debug)
+    def __init__(self, Nr, Nw, L, H, debug=False, draw=True):
+        super().__init__(Nr, Nw, L, H, debug, draw)
     
     def spawn_agents(self):
         self.__messages_service = MessageService(self.schedule)
@@ -262,7 +264,8 @@ class CommunicationEnvironnement(Environnement):
 
         self.schedule.step()
         step = self.schedule.steps
-        self.grid.draw(step)
+        if self.draw:
+            self.grid.draw(step)
         self.master.update()
         sleep(0.1)
         self.spawn(self.spawn_rate)

@@ -6,7 +6,7 @@ import numpy as np
 
 def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3):
     
-    environnement = CommunicationEnvironnement(robots_numbers, NbWastes, GridLen, GridHeight, False)
+    environnement = CommunicationEnvironnement(robots_numbers, NbWastes, GridLen, GridHeight, False, True)
     # environnement = Environnement(robots_numbers, NbWastes, GridLen, GridHeight, False)
     # print(environnement.grid.radioactivity_map.shape)
     # print(len(environnement.grid._grid), len(environnement.grid._grid[0]))
@@ -14,10 +14,25 @@ def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3
     environnement.run_while()
     # environnement.grid.print()
     # environnement.grid.draw()
-    environnement.master.mainloop()
+    # environnement.master.mainloop()
     agent_inventory = environnement.datacollector.get_agent_vars_dataframe()
     last_step = agent_inventory.index.get_level_values('Step').max()
     agent_inventory = agent_inventory.xs(last_step, level="Step")["Carry"]
+    print("Opti : ", last_step)
+    
+    # environnement = CommunicationEnvironnement(robots_numbers, NbWastes, GridLen, GridHeight, False)
+    environnement = Environnement(robots_numbers, NbWastes, GridLen, GridHeight, False, True)
+    # print(environnement.grid.radioactivity_map.shape)
+    # print(len(environnement.grid._grid), len(environnement.grid._grid[0]))
+    
+    environnement.run_while()
+    # environnement.grid.print()
+    # environnement.grid.draw()
+    # environnement.master.mainloop()
+    agent_inventory = environnement.datacollector.get_agent_vars_dataframe()
+    last_step = agent_inventory.index.get_level_values('Step').max()
+    agent_inventory = agent_inventory.xs(last_step, level="Step")["Carry"]
+    print("Non Opti : ", last_step)
 
 
     # Number of waste carried by each robot
