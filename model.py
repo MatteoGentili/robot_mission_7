@@ -151,3 +151,19 @@ class Environnement(Model):
         while not self.terminated():
             # print(self.count_wastes())
             self.one_step()
+
+
+class RandomEnvironnement(Environnement):
+    def __init__(self, Nr, Nw, L, H, debug=False):
+        super().__init__(Nr, Nw, L, H, debug)
+
+        # Agents Robots
+        robot_classes = [GreenRobot, YellowRobot, RedRobot]
+        for nb, classe, i in zip(Nr, robot_classes, range(len(Nr))):
+            for j in range(nb):
+                # get a random position in the according zone
+                pos = random.randint(i*L//3, (i+1)*L//3-1), random.randint(0, H-1)
+                a = classe(self.next_id(), self, pos)
+                self.grid.place_agent(a, pos)
+                self.schedule.add(a)
+                # print(a.border, a.type)
