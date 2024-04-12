@@ -14,8 +14,8 @@ class Robot(Agent):
     Made_action is a boolean that indicates if the robot has already made an action in the current step
     """
 
-    def __init__(self, unique_id, model, pos):
-        self = Agent(unique_id, model)
+    def __init__(self, unique_id, model, pos, **kwargs):
+        Agent.__init__(self, unique_id, model)
         self.inventory = []
         self.go_east = False
         self.pos = pos
@@ -35,6 +35,14 @@ class Robot(Agent):
             possible_steps = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
             possible_steps = [pos for pos in possible_steps if pos[0] < self.border] # Cannot go further east
             return random.choice(possible_steps)
+        
+    def get_accessible_pos(self, knowledge):
+        pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
+        pos = [p for p in pos if knowledge["radioactivity"].T[p] <= knowledge["radioactivity_limit"]]
+        pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["green"]]]
+        pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
+        pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
+        return pos
     
     def deliberate(self, knowledge=None): ### ONLY FOR GREEN AND YELLOW ROBOTS
         if knowledge is None:
@@ -44,25 +52,17 @@ class Robot(Agent):
             self.action = "move"
             wastes = knowledge["wastes"][knowledge["color"]]
             if len(wastes) == 0: # No waste of its color, then idle : move to a random cell
-                pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
-                pos = [p for p in pos if knowledge["radioactivity"].T[p] <= knowledge["radioactivity_limit"]]
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["green"]]]
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
+                pos = self.get_accessible_pos(knowledge)
                 pos = random.choice(pos) if len(pos) > 0 else knowledge["pos"]
                 return {"action": "move", "pos": pos, "objective": "idle"}
             closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
             if closest_waste.pos != knowledge["pos"]:
                 action = "move"
                 # move one cell towards the closest waste
-                pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
-                pos = [p for p in pos if knowledge["radioactivity"].T[p] <= knowledge["radioactivity_limit"]]
+                pos = self.get_accessible_pos(knowledge)
                 distances = [self.model.grid.get_distance(p, closest_waste.pos) for p in pos] if len(pos) > 0 else None
                 if distances is not None:
                     all_closest_pos = [p for p in pos if self.model.grid.get_distance(p, closest_waste.pos) == min(distances)]
-                    all_closest_pos = [p for p in all_closest_pos if p not in [r.pos for r in knowledge["robots"]["green"]]]
-                    all_closest_pos = [p for p in all_closest_pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
-                    all_closest_pos = [p for p in all_closest_pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
                     pos = random.choice(all_closest_pos) if len(all_closest_pos) > 0 else knowledge["pos"]
                 else:
                     pos = knowledge["pos"]
@@ -94,8 +94,8 @@ class GreenRobot(Robot):
         ○ green robot cannot exceed zone z1.
     """
 
-    def __init__(self, unique_id, model, pos):
-        self = Robot(unique_id, model, pos)
+    def __init__(self, unique_id, model, pos, **kwargs):
+        super().__init__(unique_id, model, pos=pos)
         self.border = self.model.grid_len//self.model.grid.n_zones -1# frontière de la zone verte
         self.type = "green"
 
@@ -114,8 +114,9 @@ class GreenRobot(Robot):
 
 class CommunicatingGreenRobot(GreenRobot, CommunicatingAgent):
     def __init__(self, unique_id, model, pos):
-        GreenRobot.__init__(self, unique_id, model, pos)
-        CommunicatingAgent.__init__(self, unique_id, model, f"GreenRobot{unique_id}")
+        GreenRobot.__init__(self, unique_id=unique_id, model=model, pos=pos)
+        CommunicatingAgent.__init__(self, unique_id=unique_id, model=model, name=f"GreenRobot{unique_id}")
+        self.argued = False
 
     def deliberate(self, knowledge=None): ### ONLY FOR GREEN AND YELLOW ROBOTS
         if knowledge is None:
@@ -127,36 +128,56 @@ class CommunicatingGreenRobot(GreenRobot, CommunicatingAgent):
                 content = message.get_content()
                 if content in knowledge["wastes"]["green"]:
                     knowledge["wastes"]["green"].remove(content)
-
+        
+        for message in messages:
+            if message.get_performative() == MessagePerformative.ARGUE and not self.argued:
+                self.argued = True
+                self.target_robot = message.get_content()
+                break
+    
         # if not carrying 2 wastes, move towards (1 cell at a time) the closest waste of its color if not already on it
         if len(self.inventory) < 2:
             self.action = "move"
             wastes = knowledge["wastes"][knowledge["color"]]
             if len(wastes) == 0: # No waste of its color, then idle : move to a random cell
-                pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
-                pos = [p for p in pos if knowledge["radioactivity"].T[p] <= knowledge["radioactivity_limit"]]
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["green"]]]
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
-                pos = random.choice(pos) if len(pos) > 0 else knowledge["pos"]
-                return {"action": "move", "pos": pos, "objective": "idle"}
+                if len(self.inventory)==0:
+                    pos = self.get_accessible_pos(knowledge)
+                    pos = random.choice(pos) if len(pos) > 0 else knowledge["pos"]
+                    return {"action": "move", "pos": pos, "objective": "idle"}
+                else:
+                    if not self.argued:
+                    # broadcast the fact that he has one waste, and can't find any other
+                        for r in knowledge["robots"]["green"]:
+                            self.send_message(Message(self.get_name(), r.get_name(), MessagePerformative.ARGUE, self))
+                        return {"action": "move", "pos": knowledge["pos"], "objective": "idle"}
+                    else:
+                        if self.model.grid.get_distance(knowledge["pos"], self.target_robot.pos) > 1:
+                            # move one cell towards the target pos
+                            pos = self.get_accessible_pos(knowledge)
+                            distances = [self.model.grid.get_distance(p, self.target_robot.pos) for p in pos] if len(pos) > 0 else None
+                            if distances is not None:
+                                all_closest_pos = [p for p in pos if self.model.grid.get_distance(p, self.target_robot.pos) == min(distances)]
+                                pos = random.choice(all_closest_pos) if len(all_closest_pos) > 0 else knowledge["pos"]
+                            else:
+                                pos = knowledge["pos"]
+                            self.send_message(Message(self.get_name(), self.target_robot.get_name(), MessagePerformative.ARGUE, self))
+                            return {"action": "move", "pos": pos, "objective": "regroup", "target": self.target_robot.pos}
+                        else:
+                            return {"action": "drop", "waste": self.inventory[0]}
+
             closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
             if closest_waste.pos != knowledge["pos"]:
                 action = "move"
                 # move one cell towards the closest waste
-                pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
-                pos = [p for p in pos if knowledge["radioactivity"].T[p] <= knowledge["radioactivity_limit"]]
+                pos = self.get_accessible_pos(knowledge)
                 distances = [self.model.grid.get_distance(p, closest_waste.pos) for p in pos] if len(pos) > 0 else None
                 if distances is not None:
                     all_closest_pos = [p for p in pos if self.model.grid.get_distance(p, closest_waste.pos) == min(distances)]
-                    all_closest_pos = [p for p in all_closest_pos if p not in [r.pos for r in knowledge["robots"]["green"]]]
-                    all_closest_pos = [p for p in all_closest_pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
-                    all_closest_pos = [p for p in all_closest_pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
                     pos = random.choice(all_closest_pos) if len(all_closest_pos) > 0 else knowledge["pos"]
                 else:
                     pos = knowledge["pos"]
                 for r in knowledge["robots"]["green"]:
-                    self.send_message(Message(self.unique_id, r.unique_id, MessagePerformative.INFORM_REF, closest_waste))
+                    self.send_message(Message(self.get_name(), r.get_name(), MessagePerformative.INFORM_REF, closest_waste))
                 return {"action": action, "pos": pos, "objective": f"pick up the closest waste which is in {closest_waste.pos}", "target": closest_waste}
             else:
                 action = "pick_up"
@@ -170,11 +191,6 @@ class CommunicatingGreenRobot(GreenRobot, CommunicatingAgent):
             else:
                 action = "drop"
                 return {"action": action}
-    
-    def step(self):
-        self.update_knowledge()
-        decision = self.deliberate(self.knowledge)
-        self.percepts = self.model.do(self, **decision)
 
 class YellowRobot(Robot):
     """
@@ -185,8 +201,8 @@ class YellowRobot(Robot):
         ○ yellow robot can move in zones z1 and z2.
     """
 
-    def __init__(self, unique_id, model, pos):
-        self = Robot(unique_id, model, pos)
+    def __init__(self, unique_id, model, pos, **kwargs):
+        super().__init__(unique_id, model, pos=pos)
         self.border = self.model.grid_len//self.model.grid.n_zones*2 -1 # frontière de la zone jaune
         self.type = "yellow"
 
@@ -204,8 +220,9 @@ class YellowRobot(Robot):
 
 class CommunicatingYellowRobot(YellowRobot, CommunicatingAgent):
     def __init__(self, unique_id, model, pos):
-        YellowRobot.__init__(self, unique_id, model, pos)
-        CommunicatingAgent.__init__(self, unique_id, model, f"YellowRobot{unique_id}")
+        YellowRobot.__init__(self, unique_id=unique_id, model=model, pos=pos)
+        CommunicatingAgent.__init__(self, unique_id=unique_id, model=model, name=f"YellowRobot{unique_id}")
+        self.argued = False
 
     def deliberate(self, knowledge=None): ### ONLY FOR GREEN AND YELLOW ROBOTS
         if knowledge is None:
@@ -216,37 +233,57 @@ class CommunicatingYellowRobot(YellowRobot, CommunicatingAgent):
             if message.get_performative() == MessagePerformative.INFORM_REF:
                 content = message.get_content()
                 if content in knowledge["wastes"]["yellow"]:
-                    knowledge["wastes"]["yelow"].remove(content)
-
+                    knowledge["wastes"]["yellow"].remove(content)
+        
+        for message in messages:
+            if message.get_performative() == MessagePerformative.ARGUE and not self.argued:
+                self.argued = True
+                self.target_robot = message.get_content()
+                break
+    
         # if not carrying 2 wastes, move towards (1 cell at a time) the closest waste of its color if not already on it
         if len(self.inventory) < 2:
             self.action = "move"
             wastes = knowledge["wastes"][knowledge["color"]]
             if len(wastes) == 0: # No waste of its color, then idle : move to a random cell
-                pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
-                pos = [p for p in pos if knowledge["radioactivity"].T[p] <= knowledge["radioactivity_limit"]]
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["green"]]]
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
-                pos = random.choice(pos) if len(pos) > 0 else knowledge["pos"]
-                return {"action": "move", "pos": pos, "objective": "idle"}
+                if len(self.inventory)==0:
+                    pos = self.get_accessible_pos(knowledge)
+                    pos = random.choice(pos) if len(pos) > 0 else knowledge["pos"]
+                    return {"action": "move", "pos": pos, "objective": "idle"}
+                else:
+                    if not self.argued:
+                    # broadcast the fact that he has one waste, and can't find any other
+                        for r in knowledge["robots"]["green"]:
+                            self.send_message(Message(self.get_name(), r.get_name(), MessagePerformative.ARGUE, self))
+                        return {"action": "move", "pos": knowledge["pos"], "objective": "idle"}
+                    else:
+                        if self.model.grid.get_distance(knowledge["pos"], self.target_robot.pos) > 1:
+                            # move one cell towards the target pos
+                            pos = self.get_accessible_pos(knowledge)
+                            distances = [self.model.grid.get_distance(p, self.target_robot.pos) for p in pos] if len(pos) > 0 else None
+                            if distances is not None:
+                                all_closest_pos = [p for p in pos if self.model.grid.get_distance(p, self.target_robot.pos) == min(distances)]
+                                pos = random.choice(all_closest_pos) if len(all_closest_pos) > 0 else knowledge["pos"]
+                            else:
+                                pos = knowledge["pos"]
+                            self.send_message(Message(self.get_name(), self.target_robot.get_name(), MessagePerformative.ARGUE, self))
+                            return {"action": "move", "pos": pos, "objective": "regroup", "target": self.target_robot.pos}
+                        else:
+                            return {"action": "drop", "waste": self.inventory[0]}
+
             closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
             if closest_waste.pos != knowledge["pos"]:
                 action = "move"
                 # move one cell towards the closest waste
-                pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
-                pos = [p for p in pos if knowledge["radioactivity"].T[p] <= knowledge["radioactivity_limit"]]
+                pos = self.get_accessible_pos(knowledge)
                 distances = [self.model.grid.get_distance(p, closest_waste.pos) for p in pos] if len(pos) > 0 else None
                 if distances is not None:
                     all_closest_pos = [p for p in pos if self.model.grid.get_distance(p, closest_waste.pos) == min(distances)]
-                    all_closest_pos = [p for p in all_closest_pos if p not in [r.pos for r in knowledge["robots"]["green"]]]
-                    all_closest_pos = [p for p in all_closest_pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
-                    all_closest_pos = [p for p in all_closest_pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
                     pos = random.choice(all_closest_pos) if len(all_closest_pos) > 0 else knowledge["pos"]
                 else:
                     pos = knowledge["pos"]
                 for r in knowledge["robots"]["green"]:
-                    self.send_message(Message(self.unique_id, r.unique_id, MessagePerformative.INFORM_REF, closest_waste))
+                    self.send_message(Message(self.get_name(), r.get_name(), MessagePerformative.INFORM_REF, closest_waste))
                 return {"action": action, "pos": pos, "objective": f"pick up the closest waste which is in {closest_waste.pos}", "target": closest_waste}
             else:
                 action = "pick_up"
@@ -269,8 +306,8 @@ class RedRobot(Robot):
         disposal zone”, the waste is then “put away”,
         ○ red robot can move in zones z1, z2 andz3.    
     """
-    def __init__(self, unique_id, model, pos):
-        self = Robot(unique_id, model, pos)
+    def __init__(self, unique_id, model, pos, **kwargs):
+        super().__init__(unique_id, model, pos=pos)
         # disposal_zone is where the grid's radioactivity is the highest
         self.disposal_zone = self.model.grid_len - 1, np.argmax(self.model.grid.radioactivity_map[:,-1])
         self.type = "red"
@@ -282,7 +319,9 @@ class RedRobot(Robot):
             "inventory": [],
             "pos": self.pos,
             "color": self.type,
-            "disposal_zone": self.disposal_zone
+            "disposal_zone": self.disposal_zone,
+            "radioactivity": self.model.grid.radioactivity_map,
+            "radioactivity_limit": 1
         }
         self.percepts = self.knowledge
 
@@ -295,9 +334,6 @@ class RedRobot(Robot):
             wastes = knowledge["wastes"][knowledge["color"]]
             if len(wastes) == 0: # No waste of its color, then idle : move to a random cell
                 pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["green"]]]
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
                 pos = random.choice(pos) if len(pos) > 0 else knowledge["pos"]
                 return {"action": "move", "pos": pos, "objective": "idle"}
             closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
@@ -308,9 +344,6 @@ class RedRobot(Robot):
                 distances = [self.model.grid.get_distance(p, closest_waste.pos) for p in pos] if len(pos) > 0 else None
                 if distances is not None:
                     all_closest_pos = [p for p in pos if self.model.grid.get_distance(p, closest_waste.pos) == min(distances)]
-                    all_closest_pos = [p for p in all_closest_pos if p not in [r.pos for r in knowledge["robots"]["green"]]]
-                    all_closest_pos = [p for p in all_closest_pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
-                    all_closest_pos = [p for p in all_closest_pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
                     pos = random.choice(all_closest_pos) if len(all_closest_pos) > 0 else knowledge["pos"]
                 else:
                     pos = knowledge["pos"]
@@ -322,10 +355,7 @@ class RedRobot(Robot):
             if knowledge["pos"] != knowledge["disposal_zone"]:
                 action = "move"
                 # move one cell towards the disposal zone
-                pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["green"]]]
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
+                pos = self.get_accessible_pos(knowledge)
                 pos = min(pos, key=lambda p: self.model.grid.get_distance(p, knowledge["disposal_zone"])) if len(pos) > 0 else knowledge["pos"]
                 return {"action": action, "pos": pos, "objective": "go to the disposal zone"}
             else:
@@ -334,8 +364,8 @@ class RedRobot(Robot):
 
 class CommunicatingRedRobot(RedRobot, CommunicatingAgent):
     def __init__(self, unique_id, model, pos):
-        RedRobot.__init__(self, unique_id, model, pos)
-        CommunicatingAgent.__init__(self, unique_id, model, f"RedRobot{unique_id}")
+        RedRobot.__init__(self, unique_id=unique_id, model=model, pos=pos)
+        CommunicatingAgent.__init__(self, unique_id=unique_id, model=model, name=f"RedRobot{unique_id}")
     
     def deliberate(self, knowledge=None):
         if knowledge is None:
@@ -354,23 +384,17 @@ class CommunicatingRedRobot(RedRobot, CommunicatingAgent):
             self.action = "move"
             wastes = knowledge["wastes"][knowledge["color"]]
             if len(wastes) == 0: # No waste of its color, then idle : move to a random cell
-                pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["green"]]]
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
+                pos = self.get_accessible_pos(knowledge)
                 pos = random.choice(pos) if len(pos) > 0 else knowledge["pos"]
                 return {"action": "move", "pos": pos, "objective": "idle", "target": None}
             closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
             if closest_waste.pos != knowledge["pos"]:
                 action = "move"
                 # move one cell towards the closest waste
-                pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
+                pos = self.get_accessible_pos(knowledge)
                 distances = [self.model.grid.get_distance(p, closest_waste.pos) for p in pos] if len(pos) > 0 else None
                 if distances is not None:
                     all_closest_pos = [p for p in pos if self.model.grid.get_distance(p, closest_waste.pos) == min(distances)]
-                    all_closest_pos = [p for p in all_closest_pos if p not in [r.pos for r in knowledge["robots"]["green"]]]
-                    all_closest_pos = [p for p in all_closest_pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
-                    all_closest_pos = [p for p in all_closest_pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
                     pos = random.choice(all_closest_pos) if len(all_closest_pos) > 0 else knowledge["pos"]
                 else:
                     pos = knowledge["pos"]
@@ -382,10 +406,7 @@ class CommunicatingRedRobot(RedRobot, CommunicatingAgent):
             if knowledge["pos"] != knowledge["disposal_zone"]:
                 action = "move"
                 # move one cell towards the disposal zone
-                pos = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["green"]]]
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["yellow"]]]
-                pos = [p for p in pos if p not in [r.pos for r in knowledge["robots"]["red"]]]
+                pos = self.get_accessible_pos(knowledge)
                 pos = min(pos, key=lambda p: self.model.grid.get_distance(p, knowledge["disposal_zone"])) if len(pos) > 0 else knowledge["pos"]
                 return {"action": action, "pos": pos, "objective": "go to the disposal zone", "target": "disposal"}
             else:

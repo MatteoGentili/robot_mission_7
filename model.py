@@ -96,11 +96,19 @@ class Environnement(Model):
             # kwargs here is empty
             # add a transformed waste to the grid according to the agent's color
             if isinstance(agent, GreenRobot):
-                waste = YellowWasteAgent(self.next_id(), self, agent.pos)
-                self.schedule.add(waste)
+                if len(agent.inventory) == 2:
+                    waste = YellowWasteAgent(self.next_id(), self, agent.pos)
+                    self.schedule.add(waste)
+                else:
+                    waste = kwargs["waste"]
+                    self.grid.place_agent(waste, agent.pos)
             elif isinstance(agent, YellowRobot):
-                waste = RedWasteAgent(self.next_id(), self, agent.pos)
-                self.schedule.add(waste)
+                if len(agent.inventory) == 2:
+                    waste = RedWasteAgent(self.next_id(), self, agent.pos)
+                    self.schedule.add(waste)
+                else:
+                    waste = kwargs["waste"]
+                    self.grid.place_agent(waste, agent.pos)
             else:
                 waste = None
                 self.full_recycled += 1
@@ -141,14 +149,19 @@ class Environnement(Model):
 
     def terminated(self):
         if self.count_wastes() == 0:
+            nb_wastes=0
             # check robots' inventories and see if green or yellow robots have 2 wastes, or red robots have 1 waste
             for a in self.schedule.agents:
                 if isinstance(a, GreenRobot) or isinstance(a, YellowRobot):
                     if len(a.inventory) == 2:
                         return False
+                    elif len(a.inventory) == 1:
+                        nb_wastes += 1
                 elif isinstance(a, RedRobot):
                     if len(a.inventory) == 1:
                         return False
+            if nb_wastes > 2:
+                return False
             return True
         return False
     
@@ -161,9 +174,9 @@ class Environnement(Model):
 class CommunicationEnvironnement(Environnement):
     def __init__(self, Nr, Nw, L, H, debug=False):
         super().__init__(Nr, Nw, L, H, debug)
-        self.__messages_service = MessageService(self.schedule)
     
     def spawn_agents(self):
+        self.__messages_service = MessageService(self.schedule)
         # Agents Waste
         # self.W = dict()
         Nwg, Nwy, Nwr = int(self.num_waste*0.7), int(self.num_waste*0.2), int(self.num_waste*0.1)
@@ -209,5 +222,5 @@ class CommunicationEnvironnement(Environnement):
         step = self.schedule.steps
         self.grid.draw(step)
         self.master.update()
-        sleep(0.1)
+        sleep(0.3)
         self.spawn(self.spawn_rate)

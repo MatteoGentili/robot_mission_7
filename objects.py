@@ -255,6 +255,9 @@ class WasteAgent(Agent):
         super().__init__(unique_id, model)
         self.pos = pos
     
+    def get_name(self):
+        return f"{self.type} Waste {self.unique_id}"
+    
     def step(self):
         pass
 
