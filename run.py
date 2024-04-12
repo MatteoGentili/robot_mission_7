@@ -18,6 +18,9 @@ def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3
     agent_inventory = environnement.datacollector.get_agent_vars_dataframe()
     last_step = agent_inventory.index.get_level_values('Step').max()
     agent_inventory = agent_inventory.xs(last_step, level="Step")["Carry"]
+
+
+    # Number of waste carried by each robot
     g = sns.histplot(agent_inventory, discrete=True)
     g.set(
         xlabel="Number of waste carried",
@@ -32,7 +35,7 @@ def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3
 
     #NbWaste
     model_vars = environnement.datacollector.get_model_vars_dataframe()
-    print(model_vars.columns)
+    print("MODEL vars column : ", model_vars.columns)
     # NbWaste = model_vars["NbWaste"]
     g = sns.lineplot(data=model_vars, x=model_vars.index, y="NbWaste")
     g.set(
@@ -52,6 +55,19 @@ def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3
         title="Number of waste recycled"
     )
     g.figure.savefig("figures/wastes_fullrecycled.png")
+    # clear the figure
+    g.figure.clear()
+
+
+    # NbWaste
+    for colour in ["green", "yellow", "red"] :
+        g = sns.lineplot(data=model_vars, x=model_vars.index, y=colour, color = colour)
+        g.set(
+            xlabel="Step",
+            ylabel=f"Number of wastes remaining in the grid for {colour} robots",
+            title="Number of waste remaining in the grid"
+        )
+    g.figure.savefig(f"figures/wastes_remaining.png")
     # clear the figure
     g.figure.clear()
 
