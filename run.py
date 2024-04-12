@@ -7,8 +7,8 @@ np.random.seed(0)
 
 def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3):
     
-    environnement = CommunicationEnvironnement(robots_numbers, NbWastes, GridLen, GridHeight, True)
-    # environnement = Environnement(robots_numbers, NbWastes, GridLen, GridHeight, True)
+    # environnement = CommunicationEnvironnement(robots_numbers, NbWastes, GridLen, GridHeight, False)
+    environnement = Environnement(robots_numbers, NbWastes, GridLen, GridHeight, False)
     # print(environnement.grid.radioactivity_map.shape)
     # print(len(environnement.grid._grid), len(environnement.grid._grid[0]))
     

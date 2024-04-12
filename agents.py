@@ -19,7 +19,8 @@ class Robot(Agent):
         self.inventory = []
         self.go_east = False
         self.pos = pos
-        self.border = None
+        self.left_border = 0
+        self.right_border = self.model.grid_len - 1
         self.knowledge = {}
         self.percepts = {}
         self.model = model
@@ -72,7 +73,7 @@ class Robot(Agent):
                 return {"action": action, "waste": closest_waste}
         # if carrying 2 wastes, if not at the border of the zone, move east, else drop a yellow waste
         else:
-            if knowledge["pos"][0] < knowledge["border"]:
+            if knowledge["pos"][0] < knowledge["right_border"]:
                 action = "move"
                 pos = (knowledge["pos"][0] + 1, knowledge["pos"][1])
                 return {"action": action, "pos": pos, "objective": "go to the border of the zone"}
@@ -96,7 +97,8 @@ class GreenRobot(Robot):
 
     def __init__(self, unique_id, model, pos, **kwargs):
         super().__init__(unique_id, model, pos=pos)
-        self.border = self.model.grid_len//self.model.grid.n_zones -1# frontière de la zone verte
+        self.right_border = self.model.grid_len//self.model.grid.n_zones -1# frontière de la zone verte
+        self.left_border = 0
         self.type = "green"
 
         self.knowledge = {
@@ -105,7 +107,8 @@ class GreenRobot(Robot):
             "inventory": [],
             "pos": self.pos,
             "color": self.type,
-            "border": self.border,
+            "right_border": self.right_border,
+            "left_border": self.left_border,
             "radioactivity": self.model.grid.radioactivity_map,
             "radioactivity_limit": 1/3
         }
@@ -190,7 +193,7 @@ class CommunicatingGreenRobot(GreenRobot, CommunicatingAgent):
                 return {"action": action, "waste": closest_waste}
         # if carrying 2 wastes, if not at the border of the zone, move east, else drop a yellow waste
         else:
-            if knowledge["pos"][0] < knowledge["border"]:
+            if knowledge["pos"][0] < knowledge["right_border"]:
                 action = "move"
                 pos = (knowledge["pos"][0] + 1, knowledge["pos"][1])
                 return {"action": action, "pos": pos, "objective": "go to the border of the zone", "target": None}
@@ -209,7 +212,8 @@ class YellowRobot(Robot):
 
     def __init__(self, unique_id, model, pos, **kwargs):
         super().__init__(unique_id, model, pos=pos)
-        self.border = self.model.grid_len//self.model.grid.n_zones*2 -1 # frontière de la zone jaune
+        self.right_border = self.model.grid_len//self.model.grid.n_zones*2 -1 # frontière de la zone jaune
+        self.left_border = self.model.grid_len//self.model.grid.n_zones
         self.type = "yellow"
 
         self.knowledge = {
@@ -218,7 +222,8 @@ class YellowRobot(Robot):
             "inventory": [],
             "pos": self.pos,
             "color": self.type,
-            "border": self.border,
+            "right_border": self.right_border,
+            "left_border": self.left_border,
             "radioactivity": self.model.grid.radioactivity_map,
             "radioactivity_limit": 2/3
         }
@@ -252,10 +257,15 @@ class CommunicatingYellowRobot(YellowRobot, CommunicatingAgent):
         if len(self.inventory) < 2:
             self.action = "move"
             wastes = knowledge["wastes"][knowledge["color"]]
-            if len(wastes) == 0: # No waste of its color, then idle : move to a random cell
+            if len(wastes) == 0: # No waste of its color, then idle : move to a cell on the left border
                 if len(self.inventory)==0:
                     pos = self.get_accessible_pos(knowledge)
-                    pos = random.choice(pos) if len(pos) > 0 else knowledge["pos"]
+                    distances = [self.model.grid.get_distance(p, (knowledge["left_border"], knowledge["pos"][1])) for p in pos] if len(pos) > 0 else None
+                    if distances is not None:
+                        all_closest_pos = [p for p in pos if self.model.grid.get_distance(p, (knowledge["left_border"], knowledge["pos"][1])) == min(distances)]
+                        pos = random.choice(all_closest_pos) if len(all_closest_pos) > 0 else knowledge["pos"]
+                    else:
+                        pos = knowledge["pos"]
                     return {"action": "move", "pos": pos, "objective": "idle"}
                 else:
                     if not self.argued:
@@ -302,7 +312,7 @@ class CommunicatingYellowRobot(YellowRobot, CommunicatingAgent):
                 return {"action": action, "waste": closest_waste}
         # if carrying 2 wastes, if not at the border of the zone, move east, else drop a yellow waste
         else:
-            if knowledge["pos"][0] < knowledge["border"]:
+            if knowledge["pos"][0] < knowledge["right_border"]:
                 action = "move"
                 pos = (knowledge["pos"][0] + 1, knowledge["pos"][1])
                 return {"action": action, "pos": pos, "objective": "go to the border of the zone", "target": None}
@@ -323,7 +333,8 @@ class RedRobot(Robot):
         # disposal_zone is where the grid's radioactivity is the highest
         self.disposal_zone = self.model.grid_len - 1, np.argmax(self.model.grid.radioactivity_map[:,-1])
         self.type = "red"
-        self.border = self.model.grid_len - 1 # frontière de la zone rouge
+        self.right_border = self.model.grid_len - 1 # frontière de la zone rouge
+        self.left_border = self.model.grid_len//self.model.grid.n_zones*2
 
         self.knowledge = {
             "wastes": self.model.grid.get_wastes(),
@@ -332,6 +343,8 @@ class RedRobot(Robot):
             "pos": self.pos,
             "color": self.type,
             "disposal_zone": self.disposal_zone,
+            "right_border": self.right_border,
+            "left_border": self.left_border,
             "radioactivity": self.model.grid.radioactivity_map,
             "radioactivity_limit": 3
         }
@@ -398,7 +411,12 @@ class CommunicatingRedRobot(RedRobot, CommunicatingAgent):
             wastes = knowledge["wastes"][knowledge["color"]]
             if len(wastes) == 0: # No waste of its color, then idle : move to a random cell
                 pos = self.get_accessible_pos(knowledge)
-                pos = random.choice(pos) if len(pos) > 0 else knowledge["pos"]
+                distances = [self.model.grid.get_distance(p, (knowledge["left_border"], knowledge["pos"][1])) for p in pos] if len(pos) > 0 else None
+                if distances is not None:
+                    all_closest_pos = [p for p in pos if self.model.grid.get_distance(p, (knowledge["left_border"], knowledge["pos"][1])) == min(distances)]
+                    pos = random.choice(all_closest_pos) if len(all_closest_pos) > 0 else knowledge["pos"]
+                else:
+                    pos = knowledge["pos"]
                 return {"action": "move", "pos": pos, "objective": "idle", "target": None}
             closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
             if closest_waste.pos != knowledge["pos"]:
@@ -417,7 +435,7 @@ class CommunicatingRedRobot(RedRobot, CommunicatingAgent):
                 return {"action": action, "waste": closest_waste}
         else:
             if knowledge["pos"] != knowledge["disposal_zone"]:
-                print(f"{knowledge['pos']} != {knowledge['disposal_zone']}")
+                # print(f"{knowledge['pos']} != {knowledge['disposal_zone']}")
                 action = "move"
                 # move one cell towards the disposal zone
                 pos = self.get_accessible_pos(knowledge)
