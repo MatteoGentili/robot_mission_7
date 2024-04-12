@@ -27,7 +27,10 @@ class Environnement(Model):
         self.datacollector = DataCollector(
             agent_reporters={"Carry": lambda a: len(a.inventory) if hasattr(a, "inventory") else 0},
             model_reporters={"NbWaste": lambda m: len([a for a in m.schedule.agents if isinstance(a, WasteAgent) and a.pos is not None]),
-                             "FullRecycled": lambda m: m.full_recycled}
+                            "FullRecycled": lambda m: m.full_recycled,
+                            "green": lambda m: len([a for a in m.schedule.agents if isinstance(a, GreenWasteAgent) and a.pos is not None]),
+                            "yellow": lambda m: len([a for a in m.schedule.agents if isinstance(a, YellowWasteAgent) and a.pos is not None]),
+                            "red": lambda m: len([a for a in m.schedule.agents if isinstance(a, RedWasteAgent) and a.pos is not None])}
         )
         
         # Grid
