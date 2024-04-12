@@ -27,11 +27,11 @@ class Environnement(Model):
         self.schedule = RandomActivation(self)
         self.datacollector = DataCollector(
             agent_reporters={"Carry": lambda a: len(a.inventory) if hasattr(a, "inventory") else 0},
-            model_reporters={"NbWaste": lambda m: len([a for a in m.schedule.agents if isinstance(a, WasteAgent) and a.pos is not None]),
+            model_reporters={"NbWaste": lambda m: len([a for a in m.schedule.agents if isinstance(a, WasteAgent) and not a.suppressed]),
                             "FullRecycled": lambda m: m.full_recycled,
-                            "green": lambda m: len([a for a in m.schedule.agents if isinstance(a, GreenWasteAgent) and a.pos is not None]),
-                            "yellow": lambda m: len([a for a in m.schedule.agents if isinstance(a, YellowWasteAgent) and a.pos is not None]),
-                            "red": lambda m: len([a for a in m.schedule.agents if isinstance(a, RedWasteAgent) and a.pos is not None])}
+                            "green": lambda m: len([a for a in m.schedule.agents if isinstance(a, GreenWasteAgent) and not a.suppressed]),
+                            "yellow": lambda m: len([a for a in m.schedule.agents if isinstance(a, YellowWasteAgent) and not a.suppressed]),
+                            "red": lambda m: len([a for a in m.schedule.agents if isinstance(a, RedWasteAgent) and not a.suppressed])}
         )
         
         # Grid
@@ -103,6 +103,8 @@ class Environnement(Model):
             # add a transformed waste to the grid according to the agent's color
             if isinstance(agent, GreenRobot):
                 if len(agent.inventory) == 2:
+                    for waste in agent.inventory:
+                        waste.suppressed = True
                     waste = YellowWasteAgent(self.next_id(), self, agent.pos)
                     self.schedule.add(waste)
                     grid_wastes = self.grid.get_wastes()
@@ -114,6 +116,8 @@ class Environnement(Model):
                     grid_wastes["green"].remove(waste)
             elif isinstance(agent, YellowRobot):
                 if len(agent.inventory) == 2:
+                    for waste in agent.inventory:
+                        waste.suppressed = True
                     waste = RedWasteAgent(self.next_id(), self, agent.pos)
                     self.schedule.add(waste)
                     grid_wastes = self.grid.get_wastes()
@@ -124,6 +128,8 @@ class Environnement(Model):
                     # exclude the waste dropped by the agent
                     grid_wastes["yellow"].remove(waste)
             else:
+                for waste in agent.inventory:
+                    waste.suppressed = True
                 waste = None
                 self.full_recycled += 1
                 grid_wastes = self.grid.get_wastes()
