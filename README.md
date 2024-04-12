@@ -30,18 +30,21 @@ Lorsque les déchets sont ramassés, ils sont retirés de l'environnement. Lorsq
 
 Les robots rouges ont une fonction `deliberate` différente : ils cherchent le déchet le plus proche et se déplacent pour le transporter directement dans la zone de dépose finale.
 
+Une fois l'action du robot effectuée, le model lui renvoie une image de la grille après l'action réalisée en lui donnant la position des déchets et des robots.
+
 ## Run
 Le code utilise plusieurs bibliothèques, notamment pour la gestion de l'environnement et des agents. Elles sont regroupées dans le fichier `requirements.txt` et peut être exécuté par la commande : 
 ```pip install -r requirements.txt```.
 
 Pour lancer la simulation, il suffit de lancer le script `run.py` avec la commande :
-```python -m run --green_robot 3 --yellow_robot 3 --red_robot 3 --NbWaste 16 --GridLen 21 --GridHeight 3 --nsteps 50```. 
+
+```python -m run --green_robot 3 --yellow_robot 3 --red_robot 3 --NbWaste 16 --GridLen 21 --GridHeight 3```. 
 Cela va lancer le programme avec les paramètres choisis. La commande ci-dessus montre les paramètres par défaut, qui fonctionne aussi simplement avec la commande `python -m run`. Les paramètres peuvent être choisis indépendamment, ceux qui ne sont pas explicité dans la commande seront mis à leur valeur par défaut.
 
 Le paramètre _GridLen_ doit être un multiple de 3.
 Durant la simulation, une fenêtre s'ouvre montrant l'état actuel de la grille. De plus, de nouveaux déchets peuvent apparaître aléatoirement sur la grille avec une probabilité de 0.15.
 
-2 images sont aussi générées :
+2 images sont aussi générées dans le dossier figures :
 <!-- - `nbwastes_carried.png` : le nombre de déchets transportés par chaque robot -->
 - `wastes_remaining.png` : le nombre de déchets restants sur la grille
 - `wastes_fullrecycled.png` : le nombre de déchets recyclés par les robots rouges

@@ -1,10 +1,11 @@
-from model import Environnement
+from model import Environnement, CommunicationEnvironnement
 import seaborn as sns
 import argparse
+import os
 
-def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3, nsteps=50):
+def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3):
     
-    environnement = Environnement(robots_numbers, NbWastes, GridLen, GridHeight, False)
+    environnement = CommunicationEnvironnement(robots_numbers, NbWastes, GridLen, GridHeight, False)
     # print(environnement.grid.radioactivity_map.shape)
     # print(len(environnement.grid._grid), len(environnement.grid._grid[0]))
     
@@ -21,7 +22,9 @@ def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3
         ylabel="Number of robots",
         title="Number of waste carried by each robot"
     )
-    g.figure.savefig("nbwastes_carried.png")
+    if not os.path.exists("figures"):
+        os.makedirs("figures")
+    g.figure.savefig("figures/nbwastes_carried.png")
     # clear the figure
     g.figure.clear()
 
@@ -35,7 +38,7 @@ def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3
         ylabel="Number of wastes remaining in the grid",
         title="Number of waste remaining in the grid"
     )
-    g.figure.savefig("wastes_remaining.png")
+    g.figure.savefig("figures/wastes_remaining.png")
     # clear the figure
     g.figure.clear()
 
@@ -46,7 +49,7 @@ def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3
         ylabel="Number of waste recycled",
         title="Number of waste recycled"
     )
-    g.figure.savefig("wastes_fullrecycled.png")
+    g.figure.savefig("figures/wastes_fullrecycled.png")
     # clear the figure
     g.figure.clear()
 
@@ -61,9 +64,8 @@ if __name__ == "__main__":
     parser.add_argument('--NbWastes', type=int, default=16, help='Number of wastes')
     parser.add_argument('--GridLen', type=int, default=21, help='Grid length')
     parser.add_argument('--GridHeight', type=int, default=3, help='Grid height')
-    parser.add_argument('--nsteps', type=int, default=50, help='Number of steps')
 
     # Run la fonction main avec ces paramètres
     args = parser.parse_args()
-    main([args.green_robot, args.yellow_robot, args.red_robot], args.NbWastes, args.GridLen, args.GridHeight, args.nsteps)
+    main([args.green_robot, args.yellow_robot, args.red_robot], args.NbWastes, args.GridLen, args.GridHeight)
 
