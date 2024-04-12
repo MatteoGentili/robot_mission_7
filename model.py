@@ -83,6 +83,7 @@ class Environnement(Model):
             if self.debug:
                 print(agent.type, "Agent", agent.unique_id, "in pos", agent.pos, "moving to", kwargs["pos"], "in zone", self.grid.get_zone(kwargs["pos"]), "to", kwargs["objective"])
             self.grid.move_agent(agent, kwargs["pos"])
+            grid_wastes = self.grid.get_wastes()
         elif action == "pick_up":
             if self.debug:
                 print(agent.type, "Agent", agent.unique_id, "picking up waste", kwargs["waste"].unique_id)
@@ -90,6 +91,7 @@ class Environnement(Model):
             self.grid.remove_agent(kwargs["waste"])
             # add the waste picked up to the agent
             agent.inventory.append(kwargs["waste"])
+            grid_wastes = self.grid.get_wastes()
         elif action == "drop":
             if self.debug:
                 print(agent.type, "Agent", agent.unique_id, "dropping waste")
@@ -99,24 +101,40 @@ class Environnement(Model):
                 if len(agent.inventory) == 2:
                     waste = YellowWasteAgent(self.next_id(), self, agent.pos)
                     self.schedule.add(waste)
+                    grid_wastes = self.grid.get_wastes()
                 else:
                     waste = kwargs["waste"]
                     self.grid.place_agent(waste, agent.pos)
+                    grid_wastes = self.grid.get_wastes()
+                    # exclude the waste dropped by the agent
+                    grid_wastes["green"].remove(waste)
             elif isinstance(agent, YellowRobot):
                 if len(agent.inventory) == 2:
                     waste = RedWasteAgent(self.next_id(), self, agent.pos)
                     self.schedule.add(waste)
+                    grid_wastes = self.grid.get_wastes()
                 else:
                     waste = kwargs["waste"]
                     self.grid.place_agent(waste, agent.pos)
+                    grid_wastes = self.grid.get_wastes()
+                    # exclude the waste dropped by the agent
+                    grid_wastes["yellow"].remove(waste)
             else:
                 waste = None
                 self.full_recycled += 1
+                grid_wastes = self.grid.get_wastes()
             agent.inventory = []
             self.grid.place_agent(waste, agent.pos) if waste is not None else None
+        elif action == "give":
+            src, dst = agent, kwargs["dest"]
+            if self.debug:
+                print(src.type, "Agent", src.unique_id, "giving waste to", dst.type, "Agent", dst.unique_id)
+            waste = src.inventory.pop()
+            dst.inventory.append(waste)
+            grid_wastes = self.grid.get_wastes()
         else:
             print("Unknown action: ", action)
-        percepts = {"pos": agent.pos, "inventory": agent.inventory, "wastes": self.grid.get_wastes(), "robots": self.grid.get_robots()}
+        percepts = {"pos": agent.pos, "inventory": agent.inventory, "wastes": grid_wastes, "robots": self.grid.get_robots()}
         return percepts
 
     def spawn(self, spawn_rate):
@@ -149,19 +167,14 @@ class Environnement(Model):
 
     def terminated(self):
         if self.count_wastes() == 0:
-            nb_wastes=0
             # check robots' inventories and see if green or yellow robots have 2 wastes, or red robots have 1 waste
             for a in self.schedule.agents:
                 if isinstance(a, GreenRobot) or isinstance(a, YellowRobot):
                     if len(a.inventory) == 2:
                         return False
-                    elif len(a.inventory) == 1:
-                        nb_wastes += 1
                 elif isinstance(a, RedRobot):
                     if len(a.inventory) == 1:
                         return False
-            if nb_wastes > 2:
-                return False
             return True
         return False
     
@@ -184,6 +197,8 @@ class CommunicationEnvironnement(Environnement):
             # put green wastes in the first zone
             pos = (random.randint(0, self.grid_len//3-1), random.randint(0, self.grid_height-1))
             w = GreenWasteAgent(self.next_id(), self, pos)
+            if self.debug:
+                print("Green waste spawned at", pos)
             self.grid.place_agent(w, pos)
             # self.W.append(w)
             self.schedule.add(w) # gerer par les données de radio-activité
@@ -191,6 +206,8 @@ class CommunicationEnvironnement(Environnement):
             # put yellow wastes in the second zone
             pos = (random.randint(self.grid_len//3, 2*self.grid_len//3-1), random.randint(0, self.grid_height-1))
             w = YellowWasteAgent(self.next_id(), self, pos)
+            if self.debug:
+                print("Yellow waste spawned at", pos)
             self.grid.place_agent(w, pos)
             # self.W.append(w)
             self.schedule.add(w)
@@ -198,6 +215,8 @@ class CommunicationEnvironnement(Environnement):
             # put red wastes in the third zone
             pos = (random.randint(2*self.grid_len//3, self.grid_len-1), random.randint(0, self.grid_height-1))
             w = RedWasteAgent(self.next_id(), self, pos)
+            if self.debug:
+                print("Red waste spawned at", pos)
             self.grid.place_agent(w, pos)
             # self.W.append(w)
             self.schedule.add(w)
@@ -209,9 +228,29 @@ class CommunicationEnvironnement(Environnement):
                 # get a random position in the according zone
                 pos = random.randint(i*self.grid_len//3, (i+1)*self.grid_len//3-1), random.randint(0, self.grid_height-1)
                 a = classe(self.next_id(), self, pos)
+                if self.debug:
+                    print("Robot", a.unique_id, "spawned at", pos)
                 self.grid.place_agent(a, pos)
                 self.schedule.add(a)
                 # print(a.border, a.type)
+
+    def terminated(self):
+        if self.count_wastes() == 0:
+            nb_wastes=0
+            # check robots' inventories and see if green or yellow robots have 2 wastes, or red robots have 1 waste
+            for a in self.schedule.agents:
+                if isinstance(a, GreenRobot) or isinstance(a, YellowRobot):
+                    if len(a.inventory) == 2:
+                        return False
+                    elif len(a.inventory) == 1:
+                        nb_wastes += 1
+                elif isinstance(a, RedRobot):
+                    if len(a.inventory) == 1:
+                        return False
+            if nb_wastes > 2:
+                return False
+            return True
+        return False
 
     def one_step(self):
 
@@ -222,5 +261,5 @@ class CommunicationEnvironnement(Environnement):
         step = self.schedule.steps
         self.grid.draw(step)
         self.master.update()
-        sleep(0.3)
+        sleep(0.1)
         self.spawn(self.spawn_rate)

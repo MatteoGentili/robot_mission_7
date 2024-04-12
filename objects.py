@@ -65,7 +65,7 @@ class HazardGrid(MultiGrid):
             random_values = np.random.uniform(i / n_zones, (i + 1) / n_zones, (self.height, self.zone_width))
             self.radioactivity_map[:, i*self.zone_width:(i+1)*self.zone_width] = random_values
         # General waste disposal zone : 200 radioactivity at end of red zone, arbitrary y
-        self.radioactivity_map[random.randint(0, self.height-1), -1] = 200
+        self.radioactivity_map[random.randint(0, self.height-1), -1] = 2
         # print("radioactivity_map = ",self.radioactivity_map)
         # No waste, just ground
         # for _ in range(0, 30):
@@ -221,7 +221,7 @@ class HazardGrid(MultiGrid):
             green = 0
             blue = 0
         # Special color for the general waste disposal zone
-        elif radioactivity == 200:
+        elif radioactivity == 2:
             red = 95
             green = 95
             blue = 95
