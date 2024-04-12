@@ -146,8 +146,13 @@ class CommunicatingGreenRobot(GreenRobot, CommunicatingAgent):
             if len(wastes) == 0: # No waste of its color, then idle : move to a random cell
                 if len(self.inventory)==0:
                     pos = self.get_accessible_pos(knowledge)
-                    pos = random.choice(pos) if len(pos) > 0 else knowledge["pos"]
-                    return {"action": "move", "pos": pos, "objective": "idle"}
+                    distances = [self.model.grid.get_distance(p, (knowledge["left_border"], knowledge["pos"][1])) for p in pos] if len(pos) > 0 else None
+                    if distances is not None:
+                        all_closest_pos = [p for p in pos if self.model.grid.get_distance(p, (knowledge["left_border"], knowledge["pos"][1])) == min(distances)]
+                        pos = random.choice(all_closest_pos) if len(all_closest_pos) > 0 else knowledge["pos"]
+                    else:
+                        pos = knowledge["pos"]
+                    return {"action": "move", "pos": pos, "objective": "idle", "target": None}
                 else:
                     if not self.argued:
                     # broadcast the fact that he has one waste, and can't find any other
@@ -172,7 +177,22 @@ class CommunicatingGreenRobot(GreenRobot, CommunicatingAgent):
                         else:
                             return {"action": "give", "waste": self.inventory[0], "dest": self.target_robot}
 
-            closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
+            closest = []
+            for waste in wastes:
+                self_distance = self.model.grid.get_distance(self.pos, waste.pos)
+                distances = [self.model.grid.get_distance(r.pos, waste.pos) > self_distance for r in knowledge["robots"][knowledge["color"]] if r != self and len(r.inventory) < 2]
+                if all(distances):
+                    closest.append(waste)
+            if len(closest) == 0:
+                pos = self.get_accessible_pos(knowledge)
+                distances = [self.model.grid.get_distance(p, (knowledge["left_border"], knowledge["pos"][1])) for p in pos] if len(pos) > 0 else None
+                if distances is not None:
+                    all_closest_pos = [p for p in pos if self.model.grid.get_distance(p, (knowledge["left_border"], knowledge["pos"][1])) == min(distances)]
+                    pos = random.choice(all_closest_pos) if len(all_closest_pos) > 0 else knowledge["pos"]
+                else:
+                    pos = knowledge["pos"]
+                return {"action": "move", "pos": pos, "objective": "idle", "target": None}
+            closest_waste = min(closest, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
             if closest_waste.pos != knowledge["pos"]:
                 action = "move"
                 # move one cell towards the closest waste
@@ -257,7 +277,7 @@ class CommunicatingYellowRobot(YellowRobot, CommunicatingAgent):
         if len(self.inventory) < 2:
             self.action = "move"
             wastes = knowledge["wastes"][knowledge["color"]]
-            if len(wastes) == 0: # No waste of its color, then idle : move to a cell on the left border
+            if len(wastes) == 0: # No waste of its color, then idle : move to a random cell
                 if len(self.inventory)==0:
                     pos = self.get_accessible_pos(knowledge)
                     distances = [self.model.grid.get_distance(p, (knowledge["left_border"], knowledge["pos"][1])) for p in pos] if len(pos) > 0 else None
@@ -266,7 +286,7 @@ class CommunicatingYellowRobot(YellowRobot, CommunicatingAgent):
                         pos = random.choice(all_closest_pos) if len(all_closest_pos) > 0 else knowledge["pos"]
                     else:
                         pos = knowledge["pos"]
-                    return {"action": "move", "pos": pos, "objective": "idle"}
+                    return {"action": "move", "pos": pos, "objective": "idle", "target": None}
                 else:
                     if not self.argued:
                     # broadcast the fact that he has one waste, and can't find any other
@@ -291,7 +311,23 @@ class CommunicatingYellowRobot(YellowRobot, CommunicatingAgent):
                         else:
                             return {"action": "give", "waste": self.inventory[0], "dest": self.target_robot}
 
-            closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
+            closest = []
+            for waste in wastes:
+                self_distance = self.model.grid.get_distance(self.pos, waste.pos)
+                distances = [self.model.grid.get_distance(r.pos, waste.pos) > self_distance for r in knowledge["robots"][knowledge["color"]] if r != self and len(r.inventory) < 2]
+                if all(distances):
+                    closest.append(waste)
+            if len(closest) == 0:
+                # idle : move to a random cell
+                pos = self.get_accessible_pos(knowledge)
+                distances = [self.model.grid.get_distance(p, (knowledge["left_border"], knowledge["pos"][1])) for p in pos] if len(pos) > 0 else None
+                if distances is not None:
+                    all_closest_pos = [p for p in pos if self.model.grid.get_distance(p, (knowledge["left_border"], knowledge["pos"][1])) == min(distances)]
+                    pos = random.choice(all_closest_pos) if len(all_closest_pos) > 0 else knowledge["pos"]
+                else:
+                    pos = knowledge["pos"]
+                return {"action": "move", "pos": pos, "objective": "idle", "target": None}
+            closest_waste = min(closest, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
             if closest_waste.pos != knowledge["pos"]:
                 action = "move"
                 # move one cell towards the closest waste
@@ -418,7 +454,18 @@ class CommunicatingRedRobot(RedRobot, CommunicatingAgent):
                 else:
                     pos = knowledge["pos"]
                 return {"action": "move", "pos": pos, "objective": "idle", "target": None}
-            closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
+            closest = []
+            for waste in wastes:
+                self_distance = self.model.grid.get_distance(self.pos, waste.pos)
+                distances = [self.model.grid.get_distance(r.pos, waste.pos) > self_distance for r in knowledge["robots"][knowledge["color"]] if r != self and len(r.inventory) < 1]
+                if all(distances):
+                    closest.append(waste)
+            if len(closest) == 0:
+                # idle : move to a random cell
+                pos = self.get_accessible_pos(knowledge)
+                pos = random.choice(pos) if len(pos) > 0 else knowledge["pos"]
+                return {"action": "move", "pos": pos, "objective": "idle"}
+            closest_waste = min(closest, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
             if closest_waste.pos != knowledge["pos"]:
                 action = "move"
                 # move one cell towards the closest waste
