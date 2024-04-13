@@ -15,7 +15,7 @@ class Robot(Agent):
     """
 
     def __init__(self, unique_id, model, pos):
-        self = Agent(unique_id, model)
+        Agent.__init__(self, unique_id, model)
         self.inventory = []
         self.go_east = False
         self.pos = pos
@@ -95,7 +95,7 @@ class GreenRobot(Robot):
     """
 
     def __init__(self, unique_id, model, pos):
-        self = Robot(unique_id, model, pos)
+        super().__init__(unique_id, model, pos=pos)
         self.border = self.model.grid_len//self.model.grid.n_zones -1# frontière de la zone verte
         self.type = "green"
 
@@ -186,7 +186,7 @@ class YellowRobot(Robot):
     """
 
     def __init__(self, unique_id, model, pos):
-        self = Robot(unique_id, model, pos)
+        super().__init__(unique_id, model, pos=pos)
         self.border = self.model.grid_len//self.model.grid.n_zones*2 -1 # frontière de la zone jaune
         self.type = "yellow"
 
@@ -270,7 +270,7 @@ class RedRobot(Robot):
         ○ red robot can move in zones z1, z2 andz3.    
     """
     def __init__(self, unique_id, model, pos):
-        self = Robot(unique_id, model, pos)
+        super().__init__(unique_id, model, pos=pos)
         # disposal_zone is where the grid's radioactivity is the highest
         self.disposal_zone = self.model.grid_len - 1, np.argmax(self.model.grid.radioactivity_map[:,-1])
         self.type = "red"
@@ -344,10 +344,12 @@ class RandomGreenRobot(GreenRobot):
         # if not carrying 2 wastes, move towards (1 cell at a time) the closest waste of its color if not already on it
         if len(self.inventory) < 2:
             self.action = "move"
-            wastes = [a for a in self.schedule.agents if isinstance(a, self.model.GreenWasteAgent) and a.pos is not None]
-            for waste in wastes:
-                if waste.pos == self.pos:
-                    action = "pick_up"
+            wastes = knowledge["wastes"][knowledge["color"]]
+            closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
+            if closest_waste.pos == knowledge["pos"]:
+                action = "pick_up"
+            else:
+                action = "move"
             return {"action": action}
         # if carrying 2 wastes, if not at the border of the zone, move east, else drop a yellow waste
         else:
@@ -379,10 +381,12 @@ class RandomYellowRobot(YellowRobot):
         # if not carrying 2 wastes, move towards (1 cell at a time) the closest waste of its color if not already on it
         if len(self.inventory) < 2:
             self.action = "move"
-            wastes = [a for a in self.schedule.agents if isinstance(a, self.model.YellowWasteAgent) and a.pos is not None]
-            for waste in wastes:
-                if waste.pos == self.pos:
-                    action = "pick_up"
+            wastes = knowledge["wastes"][knowledge["color"]]
+            closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
+            if closest_waste.pos == knowledge["pos"]:
+                action = "pick_up"
+            else:
+                action = "move"
             return {"action": action}
         # if carrying 2 wastes, if not at the border of the zone, move east, else drop a yellow waste
         else:
@@ -420,10 +424,12 @@ class RandomRedRobot(RedRobot):
         # red robots pick up red wastes and goest to put them in disposal zone
         if len(self.inventory) < 1:
             self.action = "move"
-            wastes = [a for a in self.schedule.agents if isinstance(a, self.model.RedwWasteAgent) and a.pos is not None]
-            for waste in wastes:
-                if waste.pos == self.pos:
-                    action = "pick_up"
+            wastes = knowledge["wastes"][knowledge["color"]]
+            closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
+            if closest_waste.pos == knowledge["pos"]:
+                action = "pick_up"
+            else:
+                action = "move"
             return {"action": action}
         else:
             if knowledge["pos"] != knowledge["disposal_zone"]:
