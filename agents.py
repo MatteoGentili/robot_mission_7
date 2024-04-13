@@ -17,7 +17,6 @@ class Robot(Agent):
     def __init__(self, unique_id, model, pos):
         Agent.__init__(self, unique_id, model)
         self.inventory = []
-        self.go_east = False
         self.pos = pos
         self.border = None
         self.knowledge = {}
@@ -28,8 +27,8 @@ class Robot(Agent):
         for k,v in self.percepts.items():
             self.knowledge[k] = v
 
-    def get_new_pos(self):
-        if self.go_east:
+    def get_new_pos(self, go_east = False):
+        if go_east:
             return self.pos[0] + 1, self.pos[1]
         else:
             possible_steps = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
@@ -348,20 +347,20 @@ class RandomGreenRobot(GreenRobot):
             closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
             if closest_waste.pos == knowledge["pos"]:
                 action = "pick_up"
+                return {"action": action, "waste": closest_waste}
             else:
                 action = "move"
-            return {"action": action}
+                new_pos = self.get_new_pos(go_east=False) # Randomly choose where to move
+                return {"action": action, "pos": new_pos}
         # if carrying 2 wastes, if not at the border of the zone, move east, else drop a yellow waste
         else:
             if self.pos == self.border:
                 action = "drop"
-                self.go_east = False
                 return {"action": action}
             
             else:
                 action = "move"
-                self.go_east = True
-                new_pos = self.get_new_pos()
+                new_pos = self.get_new_pos(go_east=True)
                 return {"action": action, "pos": new_pos, "objective": "go to the border of the zone"}
     
     def step(self):
@@ -385,20 +384,20 @@ class RandomYellowRobot(YellowRobot):
             closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
             if closest_waste.pos == knowledge["pos"]:
                 action = "pick_up"
+                return {"action": action, "waste": closest_waste}
             else:
                 action = "move"
-            return {"action": action}
+                new_pos = self.get_new_pos(go_east=False) # Randomly choose where to move
+                return {"action": action, "pos": new_pos}
         # if carrying 2 wastes, if not at the border of the zone, move east, else drop a yellow waste
         else:
             if self.pos == self.border:
                 action = "drop"
-                self.go_east = False
                 return {"action": action}
             
             else:
                 action = "move"
-                self.go_east = True
-                new_pos = self.get_new_pos()
+                new_pos = self.get_new_pos(go_east=True)
                 return {"action": action, "pos": new_pos, "objective": "go to the border of the zone"}
     
     def step(self):
@@ -428,9 +427,11 @@ class RandomRedRobot(RedRobot):
             closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
             if closest_waste.pos == knowledge["pos"]:
                 action = "pick_up"
+                return {"action": action, "waste": closest_waste}
             else:
                 action = "move"
-            return {"action": action}
+                new_pos = self.get_new_pos(go_east=False) # Randomly choose where to move
+                return {"action": action, "pos": new_pos}
         else:
             if knowledge["pos"] != knowledge["disposal_zone"]:
                 action = "move"
