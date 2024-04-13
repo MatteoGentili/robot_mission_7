@@ -32,7 +32,7 @@ class Robot(Agent):
             return self.pos[0] + 1, self.pos[1]
         else:
             possible_steps = self.model.grid.get_neighborhood(self.pos, moore = False, include_center = False)
-            possible_steps = [pos for pos in possible_steps if pos[0] < self.border] # Cannot go further east
+            possible_steps = [pos for pos in possible_steps if pos[0] <= self.border] # Cannot go further east
             return random.choice(possible_steps)
     
     def deliberate(self, knowledge=None): ### ONLY FOR GREEN AND YELLOW ROBOTS
@@ -95,7 +95,7 @@ class GreenRobot(Robot):
 
     def __init__(self, unique_id, model, pos):
         super().__init__(unique_id, model, pos=pos)
-        self.border = self.model.grid_len//self.model.grid.n_zones -1# frontière de la zone verte
+        self.border = self.model.grid_len//3 -1# frontière de la zone verte
         self.type = "green"
 
         self.knowledge = {
@@ -344,17 +344,22 @@ class RandomGreenRobot(GreenRobot):
         if len(self.inventory) < 2:
             self.action = "move"
             wastes = knowledge["wastes"][knowledge["color"]]
-            closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
-            if closest_waste.pos == knowledge["pos"]:
-                action = "pick_up"
-                return {"action": action, "waste": closest_waste}
-            else:
+            if len(wastes) == 0:
                 action = "move"
-                new_pos = self.get_new_pos(go_east=False) # Randomly choose where to move
+                new_pos = self.get_new_pos(go_east=False)
                 return {"action": action, "pos": new_pos}
+            else:
+                closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
+                if closest_waste.pos == knowledge["pos"]:
+                    action = "pick_up"
+                    return {"action": action, "waste": closest_waste}
+                else:
+                    action = "move"
+                    new_pos = self.get_new_pos(go_east=False) # Randomly choose where to move
+                    return {"action": action, "pos": new_pos}
         # if carrying 2 wastes, if not at the border of the zone, move east, else drop a yellow waste
         else:
-            if self.pos == self.border:
+            if self.pos[0] == self.border:
                 action = "drop"
                 return {"action": action}
             
@@ -381,17 +386,22 @@ class RandomYellowRobot(YellowRobot):
         if len(self.inventory) < 2:
             self.action = "move"
             wastes = knowledge["wastes"][knowledge["color"]]
-            closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
-            if closest_waste.pos == knowledge["pos"]:
-                action = "pick_up"
-                return {"action": action, "waste": closest_waste}
-            else:
+            if len(wastes) == 0:
                 action = "move"
-                new_pos = self.get_new_pos(go_east=False) # Randomly choose where to move
+                new_pos = self.get_new_pos(go_east=False)
                 return {"action": action, "pos": new_pos}
+            else:
+                closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
+                if closest_waste.pos == knowledge["pos"]:
+                    action = "pick_up"
+                    return {"action": action, "waste": closest_waste}
+                else:
+                    action = "move"
+                    new_pos = self.get_new_pos(go_east=False) # Randomly choose where to move
+                    return {"action": action, "pos": new_pos}
         # if carrying 2 wastes, if not at the border of the zone, move east, else drop a yellow waste
         else:
-            if self.pos == self.border:
+            if self.pos[0] == self.border:
                 action = "drop"
                 return {"action": action}
             
@@ -424,14 +434,19 @@ class RandomRedRobot(RedRobot):
         if len(self.inventory) < 1:
             self.action = "move"
             wastes = knowledge["wastes"][knowledge["color"]]
-            closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
-            if closest_waste.pos == knowledge["pos"]:
-                action = "pick_up"
-                return {"action": action, "waste": closest_waste}
-            else:
+            if len(wastes) == 0:
                 action = "move"
-                new_pos = self.get_new_pos(go_east=False) # Randomly choose where to move
+                new_pos = self.get_new_pos(go_east=False)
                 return {"action": action, "pos": new_pos}
+            else:
+                closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
+                if closest_waste.pos == knowledge["pos"]:
+                    action = "pick_up"
+                    return {"action": action, "waste": closest_waste}
+                else:
+                    action = "move"
+                    new_pos = self.get_new_pos(go_east=False) # Randomly choose where to move
+                    return {"action": action, "pos": new_pos}
         else:
             if knowledge["pos"] != knowledge["disposal_zone"]:
                 action = "move"
