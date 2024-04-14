@@ -7,7 +7,7 @@ import numpy as np
 def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3):
     OPTI = True
     if OPTI:
-        environnement = CommunicationEnvironnement(robots_numbers, NbWastes, GridLen, GridHeight, False, True)
+        environnement = CommunicationEnvironnement(robots_numbers, NbWastes, GridLen, GridHeight, True)
         # environnement = Environnement(robots_numbers, NbWastes, GridLen, GridHeight, False)
         # print(environnement.grid.radioactivity_map.shape)
         # print(len(environnement.grid._grid), len(environnement.grid._grid[0]))
@@ -46,7 +46,7 @@ def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3
     )
     if not os.path.exists("figures"):
         os.makedirs("figures")
-    g.figure.savefig("figures/nbwastes_carried.png")
+    g.figure.savefig("figures/nbwastes_carried_nonopti.png") if not OPTI else g.figure.savefig("figures/nbwastes_carried_opti.png")
     # clear the figure
     g.figure.clear()
 
@@ -61,7 +61,7 @@ def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3
         ylabel="Number of waste recycled",
         title="Number of waste recycled"
     )
-    g.figure.savefig("figures/wastes_fullrecycled.png")
+    g.figure.savefig("figures/wastes_fullrecycled_nonopti.png") if not OPTI else g.figure.savefig("figures/wastes_fullrecycled_opti.png")
     # clear the figure
     g.figure.clear()
 
@@ -74,7 +74,7 @@ def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3
             ylabel=f"Number of wastes remaining in the grid",
             title="Number of waste remaining in the grid"
         )
-    g.figure.savefig(f"figures/wastes_remaining_opti.png")
+    g.figure.savefig(f"figures/wastes_remaining_opti.png") if OPTI else g.figure.savefig(f"figures/wastes_remaining_nonopti.png")
     # clear the figure
     g.figure.clear()
 

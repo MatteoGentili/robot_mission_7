@@ -6,7 +6,7 @@ import tkinter as tk
 from tqdm import trange
 from time import sleep
 
-from agents import GreenRobot, YellowRobot, RedRobot, CommunicatingGreenRobot, CommunicatingYellowRobot, CommunicatingRedRobot
+from agents import Robot, GreenRobot, YellowRobot, RedRobot, CommunicatingGreenRobot, CommunicatingYellowRobot, CommunicatingRedRobot
 from objects import GreenWasteAgent, HazardGrid, WasteAgent, YellowWasteAgent, RedWasteAgent
 
 from mesa_com.communication import MessageService
@@ -274,6 +274,10 @@ class CommunicationEnvironnement(Environnement):
     def one_step(self):
 
         self.datacollector.collect(self)
+        nsteps = self.schedule.steps
+        if nsteps % 10 == 0 and self.debug:
+            # print with a color the following message: "Wastes remaining in inventories: {len([a for a in self.schedule.agents if isinstance(a, WasteAgent) and not a.suppressed])}"
+            print(f"\033[1;32;40mWastes remaining in inventories: {len([a for a in self.schedule.agents if isinstance(a, WasteAgent) and not a.suppressed])} : \n\t {sum([len(a.inventory) for a in self.schedule.agents if isinstance(a, GreenRobot)])} green, {sum([len(a.inventory) for a in self.schedule.agents if isinstance(a, YellowRobot)])} yellow, {sum([len(a.inventory) for a in self.schedule.agents if isinstance(a, RedRobot)])} red : \n\t\t {[a.get_name() for a in self.schedule.agents if isinstance(a, Robot) and len(a.inventory) == 1]}\033[0m")
         self.__messages_service.dispatch_messages()
 
         self.schedule.step()
