@@ -4,10 +4,9 @@ import argparse
 import os
 import numpy as np
 
-def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3):
-    OPTI = True
+def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3, OPTI = False, debug = False):
     if OPTI:
-        environnement = CommunicationEnvironnement(robots_numbers, NbWastes, GridLen, GridHeight, True)
+        environnement = CommunicationEnvironnement(robots_numbers, NbWastes, GridLen, GridHeight, debug)
         # environnement = Environnement(robots_numbers, NbWastes, GridLen, GridHeight, False)
         # print(environnement.grid.radioactivity_map.shape)
         # print(len(environnement.grid._grid), len(environnement.grid._grid[0]))
@@ -23,7 +22,7 @@ def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3
     
     else:
         # environnement = CommunicationEnvironnement(robots_numbers, NbWastes, GridLen, GridHeight, False)
-        environnement = Environnement(robots_numbers, NbWastes, GridLen, GridHeight, False, True)
+        environnement = Environnement(robots_numbers, NbWastes, GridLen, GridHeight, debug)
         # print(environnement.grid.radioactivity_map.shape)
         # print(len(environnement.grid._grid), len(environnement.grid._grid[0]))
         
@@ -89,8 +88,11 @@ if __name__ == "__main__":
     parser.add_argument('--NbWastes', type=int, default=16, help='Number of wastes')
     parser.add_argument('--GridLen', type=int, default=21, help='Grid length')
     parser.add_argument('--GridHeight', type=int, default=3, help='Grid height')
-
+    parser.add_argument('--opti', type=str, default="True", help='Optimised version')
+    parser.add_argument('--debug', type=str, default="False", help='Debug mode')
     # Run la fonction main avec ces paramètres
     args = parser.parse_args()
-    main([args.green_robot, args.yellow_robot, args.red_robot], args.NbWastes, args.GridLen, args.GridHeight)
+    opti = True if args.opti.lower() == "true" else False
+    debug = True if args.debug.lower() == "true" else False
+    main([args.green_robot, args.yellow_robot, args.red_robot], args.NbWastes, args.GridLen, args.GridHeight, opti, debug)
 

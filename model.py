@@ -201,6 +201,11 @@ class Environnement(Model):
         while not self.terminated():
             # print(self.count_wastes())
             self.one_step()
+            nsteps = self.schedule.steps
+            if (nsteps % 10 == 0 or self.terminated()) and self.debug:
+                # print with a color the following message: "Wastes remaining in inventories: {len([a for a in self.schedule.agents if isinstance(a, WasteAgent) and not a.suppressed])}"
+                print(f"\033[1;32;40mWastes remaining in inventories: {len([a for a in self.schedule.agents if isinstance(a, WasteAgent) and not a.suppressed])} : \n\t {sum([len(a.inventory) for a in self.schedule.agents if isinstance(a, GreenRobot)])} green, {sum([len(a.inventory) for a in self.schedule.agents if isinstance(a, YellowRobot)])} yellow, {sum([len(a.inventory) for a in self.schedule.agents if isinstance(a, RedRobot)])} red : \n\t\t {[f'{a.type} Robot {a.unique_id}' for a in self.schedule.agents if isinstance(a, Robot) and len(a.inventory) == 1]}\033[0m")
+        self.datacollector.collect(self)
 
 
 class CommunicationEnvironnement(Environnement):
@@ -274,10 +279,7 @@ class CommunicationEnvironnement(Environnement):
     def one_step(self):
 
         self.datacollector.collect(self)
-        nsteps = self.schedule.steps
-        if nsteps % 10 == 0 and self.debug:
-            # print with a color the following message: "Wastes remaining in inventories: {len([a for a in self.schedule.agents if isinstance(a, WasteAgent) and not a.suppressed])}"
-            print(f"\033[1;32;40mWastes remaining in inventories: {len([a for a in self.schedule.agents if isinstance(a, WasteAgent) and not a.suppressed])} : \n\t {sum([len(a.inventory) for a in self.schedule.agents if isinstance(a, GreenRobot)])} green, {sum([len(a.inventory) for a in self.schedule.agents if isinstance(a, YellowRobot)])} yellow, {sum([len(a.inventory) for a in self.schedule.agents if isinstance(a, RedRobot)])} red : \n\t\t {[a.get_name() for a in self.schedule.agents if isinstance(a, Robot) and len(a.inventory) == 1]}\033[0m")
+        
         self.__messages_service.dispatch_messages()
 
         self.schedule.step()

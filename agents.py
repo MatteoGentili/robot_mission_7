@@ -140,11 +140,6 @@ class CommunicatingRobot(CommunicatingAgent):
         # print(knowledge["wastes"][knowledge["color"]])
         
         for message in new_messages:
-            if message.get_performative() == MessagePerformative.CANCEL and self.argued and self.target_robot == message.get_content():
-                self.argued = False
-                self.confirmed = False
-        
-        for message in new_messages:
             if message.get_performative() == MessagePerformative.ARGUE and not self.argued:
                 self.argued = True
                 self.target_robot = message.get_content()
@@ -161,6 +156,11 @@ class CommunicatingRobot(CommunicatingAgent):
                     if r != self and r != self.target_robot:
                         self.send_message(Message(self.get_name(), r.get_name(), MessagePerformative.CANCEL, self))
                 break
+        
+        for message in new_messages:
+            if message.get_performative() == MessagePerformative.CANCEL and hasattr(self, "target_robot") and self.target_robot == message.get_content():
+                self.argued = False
+                self.confirmed = False
 
         # if not carrying 2 wastes, move towards (1 cell at a time) the closest waste of its color if not already on it
         if len(self.inventory) < 2:
@@ -207,7 +207,9 @@ class CommunicatingRobot(CommunicatingAgent):
                                 return {"action": "take", "waste": self.inventory[0], "src": self.target_robot}
                             else:
                                 # idle if not
-                                return {"action": "move", "pos": self.idle(), "objective": "wait"}
+                                self.argued = False
+                                self.confirmed = False
+                                return {"action": "move", "pos": self.idle(), "objective": "wait because the target robot has no waste", "target": None}
 
             closest_waste = min(wastes, key=lambda w: self.model.grid.get_distance(self.pos, w.pos))
             if closest_waste.pos != knowledge["pos"]:
