@@ -143,19 +143,21 @@ class CommunicatingRobot(CommunicatingAgent):
             if message.get_performative() == MessagePerformative.ARGUE and not self.argued:
                 self.argued = True
                 self.target_robot = message.get_content()
-                break
         
+        commited_robots = []
         for message in new_messages:
             if message.get_performative() == MessagePerformative.COMMIT and not self.confirmed:
                 self.argued = True
                 self.confirmed = True
-                self.target_robot = message.get_content()
+                commited_robots.append(message.get_content())
                 # print(f"{self.get_name()} received a message from {self.target_robot.get_name()} to confirm that he is going to regroup with him")
-                # broadcast to all other robots the cancel of the previous argue message
-                for r in knowledge["robots"][knowledge["color"]]:
-                    if r != self and r != self.target_robot:
-                        self.send_message(Message(self.get_name(), r.get_name(), MessagePerformative.CANCEL, self))
-                break
+        if len(commited_robots) > 0:
+            self.target_robot = min(commited_robots, key=lambda r: self.model.grid.get_distance(self.pos, r.pos))
+            # broadcast to all other robots the cancel of the previous argue message
+            for r in knowledge["robots"][knowledge["color"]]:
+                if r != self and r != self.target_robot:
+                    self.send_message(Message(self.get_name(), r.get_name(), MessagePerformative.CANCEL, self))
+
         
         for message in new_messages:
             if message.get_performative() == MessagePerformative.CANCEL and hasattr(self, "target_robot") and self.target_robot == message.get_content():

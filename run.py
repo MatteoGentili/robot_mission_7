@@ -2,7 +2,6 @@ from model import Environnement, CommunicationEnvironnement
 import seaborn as sns
 import argparse
 import os
-import numpy as np
 
 def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3, OPTI = False, debug = False):
     if OPTI:
@@ -85,14 +84,14 @@ if __name__ == "__main__":
     parser.add_argument('--green_robot', type=int, default=3, help='Number of green robots')
     parser.add_argument('--yellow_robot', type=int, default=3, help='Number of yellow robots')
     parser.add_argument('--red_robot', type=int, default=3, help='Number of red robots')
-    parser.add_argument('--NbWastes', type=int, default=16, help='Number of wastes')
-    parser.add_argument('--GridLen', type=int, default=21, help='Grid length')
-    parser.add_argument('--GridHeight', type=int, default=3, help='Grid height')
+    parser.add_argument('--nb_wastes', type=int, default=16, help='Number of wastes')
+    parser.add_argument('--grid_width', type=int, default=21, help='Grid length')
+    parser.add_argument('--grid_height', type=int, default=3, help='Grid height')
     parser.add_argument('--opti', type=str, default="True", help='Optimised version')
     parser.add_argument('--debug', type=str, default="False", help='Debug mode')
     # Run la fonction main avec ces paramètres
     args = parser.parse_args()
     opti = True if args.opti.lower() == "true" else False
     debug = True if args.debug.lower() == "true" else False
-    main([args.green_robot, args.yellow_robot, args.red_robot], args.NbWastes, args.GridLen, args.GridHeight, opti, debug)
+    main([args.green_robot, args.yellow_robot, args.red_robot], args.nb_wastes, args.grid_width, args.grid_height, opti, debug)
 

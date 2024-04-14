@@ -9,40 +9,6 @@ from agents import Robot
 ##################
 ###### Grid ######
 ##################
-
-# class HazardGrid(MultiGrid):
-#     def __init__(self, width, height, n_zones=3):
-#         super().__init__(width+1, height, False)
-#         self.n_zones = n_zones
-#         self.zone_width = width // n_zones
-#         self.radioactivity_map = np.ones((height, width+1))
-#         # last column is the general waste disposal zone
-
-#         for i in range(n_zones):
-#             # for each zone, assign a random radioactivity level (between 0.0 and 0.33 for zone 1, 0.33 and 0.66 for zone 2, 0.66 and 1.0 for zone 3)
-#             random_values = np.random.uniform(i / n_zones, (i + 1) / n_zones, (self.height, self.zone_width))
-#             self.radioactivity_map[:, i*self.zone_width:(i+1)*self.zone_width] = random_values
-
-    
-#     def print(self, wastes_pos, robots_pos):
-#         """
-#         Plot the grid with wastes and robots
-#         """
-#         fig, ax = plt.subplots()
-#         ax.imshow(self.radioactivity_map, cmap='afmhot', interpolation='nearest')
-#         for waste in wastes_pos:
-#             # adds a "W" to the waste position
-#             ax.text(waste[0], waste[1], "W", color='green', fontsize=12)
-#         for robot in robots_pos:
-#             # adds a "R" to the robot position
-#             ax.text(robot[0], robot[1], "R", color='red', fontsize=12)
-#         plt.show()
-
-# if __name__=="__main__":
-#     grid = HazardGrid(15, 5, 1)
-#     grid.print([(1, 1), (2, 2)], [(3, 3), (4, 4)])
-
-
 class HazardGrid(MultiGrid):
     def __init__(self, master, width, height, n_zones=3):
         super().__init__(width, height, False)
@@ -55,15 +21,17 @@ class HazardGrid(MultiGrid):
         self.width = width
         self.height = height
         self.n_zones = n_zones
-        self.zone_width = width // n_zones
-        assert width % n_zones == 0, "Width must be a multiple of the number of zones"
+        remains = width % n_zones
+        self.zone_widths = [width // n_zones] * n_zones
+        for i in range(remains):
+            self.zone_widths[i] += 1
         self.radioactivity_map = np.ones((height, width))
         # last column is the general waste disposal zone
         # print("n_zones = ",n_zones)
         for i in range(n_zones):
             # for each zone, assign a random radioactivity level
-            random_values = np.random.uniform(i / n_zones, (i + 1) / n_zones, (self.height, self.zone_width))
-            self.radioactivity_map[:, i*self.zone_width:(i+1)*self.zone_width] = random_values
+            random_values = np.random.uniform(i / n_zones, (i + 1) / n_zones, (self.height, self.zone_widths[i]))
+            self.radioactivity_map[:, sum(self.zone_widths[:i]):sum(self.zone_widths[:i+1])] = random_values
         # General waste disposal zone : 200 radioactivity at end of red zone, arbitrary y
         self.radioactivity_map[random.randint(0, self.height-1), -1] = 2
         # print("radioactivity_map = ",self.radioactivity_map)
@@ -77,7 +45,12 @@ class HazardGrid(MultiGrid):
         """
         Get the zone of a position
         """
-        return pos[0] // self.zone_width
+        x, y = pos
+        for i in range(self.n_zones):
+            if x < self.zone_widths[i]:
+                return i
+            x -= self.zone_widths[i]
+        return self.n_zones
 
     def get_all_agents(self):
         """
