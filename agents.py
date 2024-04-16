@@ -102,7 +102,7 @@ class GreenRobot(Robot):
 
     def __init__(self, unique_id, model, pos, **kwargs):
         super().__init__(unique_id, model, pos=pos)
-        self.right_border = self.model.grid_len//self.model.grid.n_zones -1# frontière de la zone verte
+        self.right_border = self.model.grid.zone_widths[0] - 1
         self.left_border = 0
         self.type = "green"
 
@@ -125,6 +125,7 @@ class CommunicatingRobot(CommunicatingAgent):
         CommunicatingAgent.__init__(self, unique_id=unique_id, model=model, name=name)
         self.argued = False
         self.confirmed = False
+        self.messages_sent = []
     
     def deliberate(self, knowledge=None): ### ONLY FOR GREEN AND YELLOW ROBOTS
         if knowledge is None:
@@ -157,6 +158,7 @@ class CommunicatingRobot(CommunicatingAgent):
             for r in knowledge["robots"][knowledge["color"]]:
                 if r != self and r != self.target_robot:
                     self.send_message(Message(self.get_name(), r.get_name(), MessagePerformative.CANCEL, self))
+                    self.messages_sent.append(Message(self.get_name(), r.get_name(), MessagePerformative.CANCEL, self))
 
         
         for message in new_messages:
@@ -180,15 +182,19 @@ class CommunicatingRobot(CommunicatingAgent):
                     return {"action": "move", "pos": pos, "objective": "idle because no waste of its color", "target": None}
                 else: # if carrying one waste and can't find any other
                     if not self.argued:
+                        last_message_perf = self.messages_sent[-1].get_performative() if len(self.messages_sent) > 0 else None
+                        if last_message_perf != MessagePerformative.ARGUE:
                     # broadcast the fact that he has one waste, and can't find any other
-                        for r in knowledge["robots"][knowledge["color"]]:
-                            if r != self:
-                                self.send_message(Message(self.get_name(), r.get_name(), MessagePerformative.ARGUE, self))
-                        # print(f"{self.get_name()} broadcasted the fact that he has one waste, and can't find any other")
+                            for r in knowledge["robots"][knowledge["color"]]:
+                                if r != self:
+                                    self.send_message(Message(self.get_name(), r.get_name(), MessagePerformative.ARGUE, self))
+                                    self.messages_sent.append(Message(self.get_name(), r.get_name(), MessagePerformative.ARGUE, self))
+                            # print(f"{self.get_name()} broadcasted the fact that he has one waste, and can't find any other")
                         return {"action": "move", "pos": self.idle(), "objective": "send message to other robots", "target": None}
                     elif not self.confirmed:
                         # send message to the robot he argued with to confirm that he is going to regroup with him
                         self.send_message(Message(self.get_name(), self.target_robot.get_name(), MessagePerformative.COMMIT, self))
+                        self.messages_sent.append(Message(self.get_name(), self.target_robot.get_name(), MessagePerformative.COMMIT, self))
                         self.confirmed = True
                         return {"action": "move", "pos": self.idle(), "objective": "send message to the robot he argued with", "target": self.target_robot}
                     else:
@@ -227,6 +233,7 @@ class CommunicatingRobot(CommunicatingAgent):
                 for r in knowledge["robots"][knowledge["color"]]:
                     if r != self:
                         self.send_message(Message(self.get_name(), r.get_name(), MessagePerformative.INFORM_REF, closest_waste))
+                        self.messages_sent.append(Message(self.get_name(), r.get_name(), MessagePerformative.INFORM_REF, closest_waste))
                 # print(f"{self.get_name()} broadcasted the fact that he is going to pick up the closest waste which is in {closest_waste.pos}") 
                 return {"action": action, "pos": pos, "objective": f"pick up the closest waste which is in {closest_waste.pos}", "target": closest_waste}
             else:
@@ -259,8 +266,8 @@ class YellowRobot(Robot):
 
     def __init__(self, unique_id, model, pos, **kwargs):
         super().__init__(unique_id, model, pos=pos)
-        self.right_border = self.model.grid_len//self.model.grid.n_zones*2 -1 # frontière de la zone jaune
-        self.left_border = self.model.grid_len//self.model.grid.n_zones
+        self.right_border = sum(self.model.grid.zone_widths[:2]) - 1
+        self.left_border = self.model.grid.zone_widths[0]
         self.type = "yellow"
 
         self.knowledge = {
@@ -297,7 +304,7 @@ class RedRobot(Robot):
         self.disposal_zone = self.model.grid_len - 1, np.argmax(self.model.grid.radioactivity_map[:,-1])
         self.type = "red"
         self.right_border = self.model.grid_len - 1 # frontière de la zone rouge
-        self.left_border = self.model.grid_len//self.model.grid.n_zones*2
+        self.left_border = sum(self.model.grid.zone_widths[:2]) # frontière de la zone jaune
 
         self.knowledge = {
             "wastes": self.model.grid.get_wastes(),
@@ -354,6 +361,7 @@ class CommunicatingRedRobot(RedRobot, CommunicatingAgent):
     def __init__(self, unique_id, model, pos):
         RedRobot.__init__(self, unique_id=unique_id, model=model, pos=pos)
         CommunicatingAgent.__init__(self, unique_id=unique_id, model=model, name=f"RedRobot{unique_id}")
+        self.messages_sent = []
     
     def deliberate(self, knowledge=None):
         if knowledge is None:
@@ -393,6 +401,11 @@ class CommunicatingRedRobot(RedRobot, CommunicatingAgent):
                     pos = random.choice(all_closest_pos) if len(all_closest_pos) > 0 else knowledge["pos"]
                 else:
                     pos = knowledge["pos"]
+                for r in knowledge["robots"][knowledge["color"]]:
+                    if r != self:
+                        self.send_message(Message(self.get_name(), r.get_name(), MessagePerformative.INFORM_REF, closest_waste))
+                        self.messages_sent.append(Message(self.get_name(), r.get_name(), MessagePerformative.INFORM_REF, closest_waste))
+                # print(f"{self.get_name()} broadcasted the fact that he is going to pick up the closest waste which is in {closest_waste.pos}") 
                 return {"action": action, "pos": pos, "objective": f"pick up the closest waste which is in {closest_waste.pos}", "target": closest_waste}
             else:
                 action = "pick_up"

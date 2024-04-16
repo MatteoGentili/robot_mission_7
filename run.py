@@ -4,6 +4,8 @@ import argparse
 import os
 
 def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3, OPTI = False, debug = False):
+    if not os.path.exists("figures"):
+        os.makedirs("figures")
     if OPTI:
         environnement = CommunicationEnvironnement(robots_numbers, NbWastes, GridLen, GridHeight, debug)
         # environnement = Environnement(robots_numbers, NbWastes, GridLen, GridHeight, False)
@@ -18,6 +20,19 @@ def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3
         last_step = agent_inventory.index.get_level_values('Step').max()
         agent_inventory = agent_inventory.xs(last_step, level="Step")["Carry"]
         print("Opti : ", last_step)
+        model_vars = environnement.datacollector.get_model_vars_dataframe()
+        print("MODEL vars column : ", model_vars.columns)
+        # Number of messages sent
+        for colour in ["green", "yellow", "red"] :
+            g = sns.lineplot(data=model_vars, x=model_vars.index, y="NbMessages_"+colour, color = colour)
+            g.set(
+                xlabel="Step",
+                ylabel=f"Number of messages sent",
+                title="Number of messages sent"
+            )
+        g.figure.savefig("figures/nbmessages_sent.png")
+        # clear the figure
+        g.figure.clear()
     
     else:
         # environnement = CommunicationEnvironnement(robots_numbers, NbWastes, GridLen, GridHeight, False)
@@ -33,6 +48,8 @@ def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3
         last_step = agent_inventory.index.get_level_values('Step').max()
         agent_inventory = agent_inventory.xs(last_step, level="Step")["Carry"]
         print("Non Opti : ", last_step)
+        model_vars = environnement.datacollector.get_model_vars_dataframe()
+        print("MODEL vars column : ", model_vars.columns)
 
 
     # Number of waste carried by each robot
@@ -42,15 +59,9 @@ def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3
         ylabel="Number of robots",
         title="Number of waste carried by each robot"
     )
-    if not os.path.exists("figures"):
-        os.makedirs("figures")
     g.figure.savefig("figures/nbwastes_carried_nonopti.png") if not OPTI else g.figure.savefig("figures/nbwastes_carried_opti.png")
     # clear the figure
     g.figure.clear()
-
-    model_vars = environnement.datacollector.get_model_vars_dataframe()
-    print("MODEL vars column : ", model_vars.columns)
-    
 
     #NbRecycle
     g = sns.lineplot(data=model_vars, x=model_vars.index, y="FullRecycled")
