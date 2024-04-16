@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import random
 import tkinter as tk
+from PIL import Image, ImageTk
 from agents import Robot
 
 ##################
@@ -114,6 +115,8 @@ class HazardGrid(MultiGrid):
                     continue
                 wastes_pos[agent] = agent.pos
             elif isinstance(agent, Robot):
+                for w in agent.inventory:
+                    wastes_pos[w] = agent.pos
                 robots_pos[agent] = agent.pos
 
         for i in range(self.height):
@@ -124,17 +127,23 @@ class HazardGrid(MultiGrid):
                 y1 = y0 + self.cell_height
                 color = self.get_color(self.radioactivity_map[i][j])
                 self.canvas.create_rectangle(x0, y0, x1, y1, fill=color)
-
+        self.images = []
         for waste in wastes_pos:
             pos = wastes_pos[waste]
             x = pos[0] * self.cell_width + self.cell_width / 2
             y = pos[1] * self.cell_height + self.cell_height / 2
             fill = 'green' if waste.type == "Green" else 'yellow' if waste.type == "Yellow" else 'red'
-            # make the letter more visible by adding a black outline
-            text_item = self.canvas.create_text(x, y, text="■", fill=fill, anchor='center', font=("Helvetica", 16, "bold"))
-            bbox = self.canvas.bbox(text_item)
-            rect_item = self.canvas.create_rectangle(bbox, outline="white", fill="black")
-            self.canvas.tag_raise(text_item,rect_item)
+            
+            # text_item = self.canvas.create_text(x, y, text="■", fill=fill, anchor='center', font=("Helvetica", 16, "bold"))
+            # bbox = self.canvas.bbox(text_item)
+            # rect_item = self.canvas.create_rectangle(bbox, outline="white", fill="black")
+            # add the waste png image at the position
+            image = Image.open(f"images/{waste.type.lower()}_waste.png")
+            image = image.resize((self.cell_width, self.cell_height), Image.ANTIALIAS)
+            image = ImageTk.PhotoImage(image)
+            img_item = self.canvas.create_image(x, y, image=image, anchor='center')
+            self.images.append(image)
+        self.canvas.update()
 
         for robot in robots_pos:
             pos = robots_pos[robot]

@@ -159,6 +159,8 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-*.png
-*.jpg
-*.jpeg
+# figures/
+*jpg
+*png
+# every png that is not in the images folder
+!images/*.png
