@@ -139,7 +139,7 @@ class HazardGrid(MultiGrid):
             # rect_item = self.canvas.create_rectangle(bbox, outline="white", fill="black")
             # add the waste png image at the position
             image = Image.open(f"images/{waste.type.lower()}_waste.png")
-            image = image.resize((self.cell_width, self.cell_height), Image.ANTIALIAS)
+            image = image.resize((self.cell_width, self.cell_height), Image.Resampling.LANCZOS)
             image = ImageTk.PhotoImage(image)
             img_item = self.canvas.create_image(x, y, image=image, anchor='center')
             self.images.append(image)

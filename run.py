@@ -100,7 +100,7 @@ if __name__ == "__main__":
     parser.add_argument('--nb_wastes', type=int, default=16, help='Number of wastes')
     parser.add_argument('--grid_width', type=int, default=21, help='Grid length')
     parser.add_argument('--grid_height', type=int, default=3, help='Grid height')
-    parser.add_argument('--opti', type=str, default="False", help='Optimised version')
+    parser.add_argument('--opti', type=str, default="True", help='Optimised version')
     parser.add_argument('--debug', type=str, default="False", help='Debug mode')
     # Run la fonction main avec ces paramètres
     args = parser.parse_args()
