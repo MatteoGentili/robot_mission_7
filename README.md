@@ -1,7 +1,7 @@
 # Robot Mission, Groupe 7
 Self-organization of robots in a hostile environment
 
-![Alt text](images\petit_robot.jpg?raw=true "Title")
+![Alt text](images/petit_robot.jpg?raw=true "Title")
 
 ## Groupe
 - FOSSAT Théotime
