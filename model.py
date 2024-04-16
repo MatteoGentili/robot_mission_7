@@ -6,7 +6,7 @@ import tkinter as tk
 from tqdm import trange
 from time import sleep
 
-from agents import GreenRobot, YellowRobot, RedRobot, CommunicatingGreenRobot, CommunicatingYellowRobot, CommunicatingRedRobot, RandomGreenRobot, RandomYellowRobot, RandomRedRobot
+from agents import Robot, GreenRobot, YellowRobot, RedRobot, CommunicatingGreenRobot, CommunicatingYellowRobot, CommunicatingRedRobot, RandomGreenRobot, RandomYellowRobot, RandomRedRobot
 from objects import GreenWasteAgent, HazardGrid, WasteAgent, YellowWasteAgent, RedWasteAgent
 
 from mesa_com.communication import MessageService, CommunicatingAgent
