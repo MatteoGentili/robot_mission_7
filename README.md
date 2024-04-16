@@ -26,7 +26,7 @@ Nous avons doté chaque robot de la `knowledge` suivante :
 - (robot rouge uniquement) `disposal_zone` : la position de la zone de dépose finale
 
 Les robots verts et jaunes ont les mêmes fonctions `deliberate` : ils cherchent le déchet de leur couleur le plus proche et se déplacent pour le porter jusqu'à en avoir 2, auquel cas ils se dirigent vers leur frontière de zone de travail respective pour les déposer en les transformant en un déchet de couleur "supérieure".
-Lorsque les déchets sont ramassés, ils sont retirés de l'environnement. Lorsqu'ils sont déposés, de nouveaux sont créés.
+Lorsque les déchets sont ramassés, ils sont retirés de l'environnement.
 
 Les robots rouges ont une fonction `deliberate` différente : ils cherchent le déchet le plus proche et se déplacent pour le transporter directement dans la zone de dépose finale.
 
