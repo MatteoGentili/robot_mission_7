@@ -33,7 +33,7 @@ Les robots rouges ont une fonction `deliberate` différente : ils cherchent le d
 Une fois l'action du robot effectuée, le model lui renvoie une image de la grille après l'action réalisée en lui donnant la position des déchets et des robots.
 
 ## Step 2 : Communication entre les agents
- 
+
 **Analyse du système de communication :**
 
 Broadcast par couleur : Chaque robot ne communique qu'avec des robots de la même catégorie de couleur. Cela réduit le trafic de communication et évite les interférences inutiles entre les robots qui ne partagent pas les mêmes objectifs.
@@ -43,11 +43,11 @@ Broadcast par couleur : Chaque robot ne communique qu'avec des robots de la mêm
 Le premier robot choisit le déchet le plus proche de sa couleur.
 Les robots suivants choisissent les déchets les plus proches, en excluant ceux déjà ciblés par d'autres robots. Cela maximise l'efficacité en évitant la redondance et en minimisant les trajets.
 
-**Utilisation des performatifs Argue et COMMIT :**
+**Utilisation des performatifs ARGUE, COMMIT et CANCEL :**
 
-Argue est utilisé par un robot pour indiquer qu'il détient déjà un déchet. Cela pourrait être interprété comme une demande aux autres robots de ne pas cibler le même type de déchet si cela n'est pas nécessaire.
-COMMIT est utilisé par un autre robot pour indiquer qu'il est prêt à transférer un déchet, ce qui entraîne l'annulation du Argue par le premier robot. Ceci est essentiel pour la synchronisation des actions entre les robots.
-Transfert de déchets : Les robots se rejoignent pour transférer les déchets de l'un à l'autre, ce qui peut aider à consolider les déchets pour une disposition ou un traitement plus efficace.
+ARGUE est utilisé par un robot pour indiquer qu'il détient déjà un déchet. Cela pourrait être interprété comme une demande aux autres robots de ne pas cibler le même type de déchet si cela n'est pas nécessaire.
+COMMIT est utilisé par un autre robot pour indiquer qu'il est prêt à transférer un déchet, ce qui entraîne l'annulation du ARGUE par le premier robot qui envoie à tous les autres robots un message CANCEL. Ceci est essentiel pour la synchronisation des actions entre les robots.
+Transfert de déchets : Les robots se rejoignent pour transférer les déchets de l'un à l'autre, afin de maximiser le nombre de déchets recyclés.
 
 ## Run
 Le code utilise plusieurs bibliothèques, notamment pour la gestion de l'environnement et des agents. Elles sont regroupées dans le fichier `requirements.txt` et peut être exécuté par la commande : 
