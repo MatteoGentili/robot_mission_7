@@ -23,6 +23,7 @@ class CommunicatingAgent(Agent):
         """ Create a new communicating agent.
         """
         super().__init__(unique_id, model)
+        # print(f"creating CommunicatingAgent with name: {name}")
         self.__name = name
         self.__mailbox = Mailbox()
         self.__messages_service = MessageService.get_instance()

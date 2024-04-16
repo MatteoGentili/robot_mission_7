@@ -38,13 +38,24 @@ Le code utilise plusieurs bibliothèques, notamment pour la gestion de l'environ
 
 Pour lancer la simulation, il suffit de lancer le script `run.py` avec la commande :
 
-```python -m run --green_robot 3 --yellow_robot 3 --red_robot 3 --NbWaste 16 --GridLen 21 --GridHeight 3```. 
-Cela va lancer le programme avec les paramètres choisis. La commande ci-dessus montre les paramètres par défaut, qui fonctionne aussi simplement avec la commande `python -m run`. Les paramètres peuvent être choisis indépendamment, ceux qui ne sont pas explicité dans la commande seront mis à leur valeur par défaut.
+```python -m run --green_robot 3 --yellow_robot 3 --red_robot 3 --nb_wastes 16 --grid_width 21 --grid_height 3 --opti True```. 
+Cela va lancer le programme avec les paramètres choisis. La commande ci-dessus montre les paramètres par défaut, qui fonctionne aussi simplement avec la commande `python -m run`. Les paramètres peuvent être choisis indépendamment, ceux qui ne sont pas explicité dans la commande seront mis à leur valeur par défaut. Les paramètres sont les suivants :
+- `green_robot` : le nombre de robots verts
+- `yellow_robot` : le nombre de robots jaunes
+- `red_robot` : le nombre de robots rouges
+- `nb_wastes` : le nombre de déchets sur la grille
+- `grid_width` : la largeur de la grille
+- `grid_height` : la hauteur de la grille
+- `opti` : si True, lance la simulation avec des robots communiquants, sinon sans communication
 
-Le paramètre _GridLen_ doit être un multiple de 3.
-Durant la simulation, une fenêtre s'ouvre montrant l'état actuel de la grille. De plus, de nouveaux déchets peuvent apparaître aléatoirement sur la grille avec une probabilité de 0.15.
+Durant la simulation, une fenêtre s'ouvre montrant l'état actuel de la grille.
 
-2 images sont aussi générées dans le dossier figures :
-<!-- - `nbwastes_carried.png` : le nombre de déchets transportés par chaque robot -->
+2 images sont aussi générées dans le dossier figures, dont les noms seront suivis du suffixe `_opti` si la simulation a été lancée avec des robots communiquants, et `_nonopti` sinon :
 - `wastes_remaining.png` : le nombre de déchets restants sur la grille
 - `wastes_fullrecycled.png` : le nombre de déchets recyclés par les robots rouges
+
+## Résultats
+Les résultats de la simulation sont stockés dans le dossier `figures`. Les images générées montrent le nombre de déchets restants sur la grille et le nombre de déchets recyclés par les robots rouges.
+On peut notamment voir des différences notables entre les simulations avec et sans communication :
+- Avec communication, la simulation a tendance à être plus longue, mais les robots sont plus efficaces et recyclent plus de déchets : il ne reste à la fin que le nombre minimal de déchets.
+- Sans communication, la simulation est plus rapide, mais les robots sont moins efficaces et il reste plus de déchets à la fin.
