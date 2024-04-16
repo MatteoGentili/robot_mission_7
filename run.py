@@ -59,12 +59,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = 'Choose the parameters for the simulation')
 
     # Ajoute tous les paramètres de la fonction main
-    parser.add_argument('--green_robot', type=int, default=3, help='Number of green robots')
+    parser.add_argument('--green_robot', type=int, default=5, help='Number of green robots')
     parser.add_argument('--yellow_robot', type=int, default=3, help='Number of yellow robots')
     parser.add_argument('--red_robot', type=int, default=3, help='Number of red robots')
     parser.add_argument('--NbWastes', type=int, default=16, help='Number of wastes')
     parser.add_argument('--GridLen', type=int, default=21, help='Grid length')
-    parser.add_argument('--GridHeight', type=int, default=3, help='Grid height')
+    parser.add_argument('--GridHeight', type=int, default=4, help='Grid height')
 
     # Run la fonction main avec ces paramètres
     args = parser.parse_args()
