@@ -9,7 +9,7 @@ from time import sleep
 from agents import Robot, GreenRobot, YellowRobot, RedRobot, CommunicatingGreenRobot, CommunicatingYellowRobot, CommunicatingRedRobot
 from objects import GreenWasteAgent, HazardGrid, WasteAgent, YellowWasteAgent, RedWasteAgent
 
-from mesa_com.communication import MessageService
+from mesa_com.communication import MessageService, CommunicatingAgent
 
 
 class Environnement(Model):
@@ -173,7 +173,7 @@ class Environnement(Model):
         if self.draw:
             self.grid.draw(step)
         self.master.update()
-        sleep(0.1)
+        # sleep(0.1)
         self.spawn(self.spawn_rate)
     
     def count_wastes(self):
@@ -211,6 +211,18 @@ class Environnement(Model):
 class CommunicationEnvironnement(Environnement):
     def __init__(self, Nr, Nw, L, H, debug=False, draw=True):
         super().__init__(Nr, Nw, L, H, debug, draw)
+        self.datacollector = DataCollector(
+            agent_reporters={"Carry": lambda a: len(a.inventory) if hasattr(a, "inventory") else 0},
+            model_reporters={"NbWaste": lambda m: len([a for a in m.schedule.agents if isinstance(a, WasteAgent) and not a.suppressed]),
+                            "FullRecycled": lambda m: m.full_recycled,
+                            "green": lambda m: len([a for a in m.schedule.agents if isinstance(a, GreenWasteAgent) and not a.suppressed]),
+                            "yellow": lambda m: len([a for a in m.schedule.agents if isinstance(a, YellowWasteAgent) and not a.suppressed]),
+                            "red": lambda m: len([a for a in m.schedule.agents if isinstance(a, RedWasteAgent) and not a.suppressed]),
+                            "NbMessages_green": lambda m: sum(len(a.messages_sent) for a in m.schedule.agents if isinstance(a, CommunicatingGreenRobot)),
+                            "NbMessages_yellow": lambda m: sum(len(a.messages_sent) for a in m.schedule.agents if isinstance(a, CommunicatingYellowRobot)),
+                            "NbMessages_red": lambda m: sum(len(a.messages_sent) for a in m.schedule.agents if isinstance(a, CommunicatingRedRobot))}
+
+        )
     
     def spawn_agents(self):
         self.__messages_service = MessageService(self.schedule)
