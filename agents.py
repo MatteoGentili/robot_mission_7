@@ -230,9 +230,11 @@ class CommunicatingRobot(CommunicatingAgent):
                 else:
                     pos = knowledge["pos"]
                 for r in knowledge["robots"][knowledge["color"]]:
-                    if r != self:
-                        self.send_message(Message(self.get_name(), r.get_name(), MessagePerformative.INFORM_REF, closest_waste))
-                        self.messages_sent.append(Message(self.get_name(), r.get_name(), MessagePerformative.INFORM_REF, closest_waste))
+                    last_message_perf = self.messages_sent[-1].get_performative() if len(self.messages_sent) > 0 else None
+                    if last_message_perf != MessagePerformative.INFORM_REF:
+                        if r != self:
+                            self.send_message(Message(self.get_name(), r.get_name(), MessagePerformative.INFORM_REF, closest_waste))
+                            self.messages_sent.append(Message(self.get_name(), r.get_name(), MessagePerformative.INFORM_REF, closest_waste))
                 # print(f"{self.get_name()} broadcasted the fact that he is going to pick up the closest waste which is in {closest_waste.pos}") 
                 return {"action": action, "pos": pos, "objective": f"pick up the closest waste which is in {closest_waste.pos}", "target": closest_waste}
             else:
@@ -560,9 +562,11 @@ class CommunicatingRedRobot(RedRobot, CommunicatingAgent):
                 else:
                     pos = knowledge["pos"]
                 for r in knowledge["robots"][knowledge["color"]]:
-                    if r != self:
-                        self.send_message(Message(self.get_name(), r.get_name(), MessagePerformative.INFORM_REF, closest_waste))
-                        self.messages_sent.append(Message(self.get_name(), r.get_name(), MessagePerformative.INFORM_REF, closest_waste))
+                    last_message_perf = self.messages_sent[-1].get_performative() if len(self.messages_sent) > 0 else None
+                    if last_message_perf != MessagePerformative.INFORM_REF:
+                        if r != self:
+                            self.send_message(Message(self.get_name(), r.get_name(), MessagePerformative.INFORM_REF, closest_waste))
+                            self.messages_sent.append(Message(self.get_name(), r.get_name(), MessagePerformative.INFORM_REF, closest_waste))
                 # print(f"{self.get_name()} broadcasted the fact that he is going to pick up the closest waste which is in {closest_waste.pos}") 
                 return {"action": action, "pos": pos, "objective": f"pick up the closest waste which is in {closest_waste.pos}", "target": closest_waste}
             else:

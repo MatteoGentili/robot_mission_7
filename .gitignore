@@ -164,3 +164,4 @@ cython_debug/
 *png
 # every png that is not in the images folder
 !images/*.png
+!images/*.jpg
