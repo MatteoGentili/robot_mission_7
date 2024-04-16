@@ -1,7 +1,8 @@
-from model import Environnement, CommunicationEnvironnement
+from model import Environnement, CommunicationEnvironnement, RandomEnvironnement
 import seaborn as sns
 import argparse
 import os
+    
 
 def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3, OPTI = False, debug = False):
     if not os.path.exists("figures"):
@@ -36,7 +37,8 @@ def main(robots_numbers = [3, 3, 3], NbWastes = 16, GridLen = 21, GridHeight = 3
     
     else:
         # environnement = CommunicationEnvironnement(robots_numbers, NbWastes, GridLen, GridHeight, False)
-        environnement = Environnement(robots_numbers, NbWastes, GridLen, GridHeight, debug)
+        # environnement = Environnement(robots_numbers, NbWastes, GridLen, GridHeight, debug)
+        environnement = RandomEnvironnement(robots_numbers, NbWastes, GridLen, GridHeight, debug)
         # print(environnement.grid.radioactivity_map.shape)
         # print(len(environnement.grid._grid), len(environnement.grid._grid[0]))
         
@@ -92,7 +94,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = 'Choose the parameters for the simulation')
 
     # Ajoute tous les paramètres de la fonction main
-    parser.add_argument('--green_robot', type=int, default=3, help='Number of green robots')
+    parser.add_argument('--green_robot', type=int, default=5, help='Number of green robots')
     parser.add_argument('--yellow_robot', type=int, default=3, help='Number of yellow robots')
     parser.add_argument('--red_robot', type=int, default=3, help='Number of red robots')
     parser.add_argument('--nb_wastes', type=int, default=16, help='Number of wastes')

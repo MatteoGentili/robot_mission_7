@@ -6,7 +6,7 @@ import tkinter as tk
 from tqdm import trange
 from time import sleep
 
-from agents import Robot, GreenRobot, YellowRobot, RedRobot, CommunicatingGreenRobot, CommunicatingYellowRobot, CommunicatingRedRobot
+from agents import Robot, GreenRobot, YellowRobot, RedRobot, CommunicatingGreenRobot, CommunicatingYellowRobot, CommunicatingRedRobot, RandomGreenRobot, RandomYellowRobot, RandomRedRobot
 from objects import GreenWasteAgent, HazardGrid, WasteAgent, YellowWasteAgent, RedWasteAgent
 
 from mesa_com.communication import MessageService, CommunicatingAgent
@@ -173,7 +173,7 @@ class Environnement(Model):
         if self.draw:
             self.grid.draw(step)
         self.master.update()
-        # sleep(0.1)
+        sleep(0.1)
         self.spawn(self.spawn_rate)
     
     def count_wastes(self):
@@ -206,6 +206,48 @@ class Environnement(Model):
                 # print with a color the following message: "Wastes remaining in inventories: {len([a for a in self.schedule.agents if isinstance(a, WasteAgent) and not a.suppressed])}"
                 print(f"\033[1;32;40mWastes remaining in inventories: {len([a for a in self.schedule.agents if isinstance(a, WasteAgent) and not a.suppressed])} : \n\t {sum([len(a.inventory) for a in self.schedule.agents if isinstance(a, GreenRobot)])} green, {sum([len(a.inventory) for a in self.schedule.agents if isinstance(a, YellowRobot)])} yellow, {sum([len(a.inventory) for a in self.schedule.agents if isinstance(a, RedRobot)])} red : \n\t\t {[f'{a.type} Robot {a.unique_id}' for a in self.schedule.agents if isinstance(a, Robot) and len(a.inventory) == 1]}\033[0m")
         self.datacollector.collect(self)
+
+
+class RandomEnvironnement(Environnement):
+    def __init__(self, Nr, Nw, L, H, debug=False):
+        super().__init__(Nr, Nw, L, H, debug)
+
+    def spawn_agents(self):
+        # Agents Waste
+        # self.W = dict()
+        Nwg, Nwy, Nwr = int(self.num_waste*0.7), int(self.num_waste*0.2), int(self.num_waste*0.1)
+        for i in range (Nwg):
+            # put green wastes in the first zone
+            pos = (random.randint(0, self.grid_len//3-1), random.randint(0, self.grid_height-1))
+            w = GreenWasteAgent(self.next_id(), self, pos)
+            self.grid.place_agent(w, pos)
+            # self.W.append(w)
+            self.schedule.add(w) # gerer par les données de radio-activité
+        for i in range (Nwy):
+            # put yellow wastes in the second zone
+            pos = (random.randint(self.grid_len//3, 2*self.grid_len//3-1), random.randint(0, self.grid_height-1))
+            w = YellowWasteAgent(self.next_id(), self, pos)
+            self.grid.place_agent(w, pos)
+            # self.W.append(w)
+            self.schedule.add(w)
+        for i in range (Nwr):
+            # put red wastes in the third zone
+            pos = (random.randint(2*self.grid_len//3, self.grid_len-1), random.randint(0, self.grid_height-1))
+            w = RedWasteAgent(self.next_id(), self, pos)
+            self.grid.place_agent(w, pos)
+            # self.W.append(w)
+            self.schedule.add(w)
+
+        # Agents Robots
+        robot_classes = [RandomGreenRobot, RandomYellowRobot, RandomRedRobot]
+        for nb, classe, i in zip(self.num_robots, robot_classes, range(len(self.num_robots))):
+            for j in range(nb):
+                # get a random position in the according zone
+                pos = random.randint(i*self.grid_len//3, (i+1)*self.grid_len//3-1), random.randint(0, self.grid_height-1)
+                a = classe(self.next_id(), self, pos)
+                self.grid.place_agent(a, pos)
+                self.schedule.add(a)
+                # print(a.border, a.type)
 
 
 class CommunicationEnvironnement(Environnement):
